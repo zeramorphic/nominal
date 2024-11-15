@@ -1,0 +1,17 @@
+name = "nominal"
+version = "0.1.0"
+keywords = ["math"]
+defaultTargets = ["Nominal"]
+
+[leanOptions]
+autoImplicit = false
+relaxedAutoImplicit = false
+pp.proofs.withType = false
+pp.unicode.fun = true
+
+[[require]]
+name = "mathlib"
+scope = "leanprover-community"
+
+[[lean_lib]]
+name = "Nominal"
