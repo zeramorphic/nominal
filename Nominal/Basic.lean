@@ -146,18 +146,16 @@ theorem supp_supports' [Infinite 𝔸] {α : Type*} [MulAction (Finperm 𝔸) α
     · intro b
       aesop
 
-theorem supp_minimal [Infinite 𝔸] {α : Type*} [MulAction (Finperm 𝔸) α]
+theorem supp_minimal {α : Type*} [MulAction (Finperm 𝔸) α]
     (x : α) (s : Finset 𝔸) (hs : Supports (Finperm 𝔸) (s : Set 𝔸) x) :
     supp 𝔸 x ⊆ s := by
   intro a ha
   rw [mem_supp_iff' x ⟨s, hs⟩] at ha
   exact ha s hs
 
-class Nominal (𝔸 : Type*) [DecidableEq 𝔸] [Infinite 𝔸] (α : Type*)
+class Nominal (𝔸 : Type*) [DecidableEq 𝔸] (α : Type*)
     extends MulAction (Finperm 𝔸) α where
   supported : ∀ x : α, FinitelySupported 𝔸 x
-
-variable [Infinite 𝔸]
 
 namespace Nominal
 
@@ -169,12 +167,12 @@ theorem mem_supp_iff {α : Type*} [Nominal 𝔸 α]
     a ∈ supp 𝔸 x ↔ ∀ s : Finset 𝔸, Supports (Finperm 𝔸) (s : Set 𝔸) x → a ∈ s :=
   mem_supp_iff' x (Nominal.supported x) a
 
-theorem supp_supports {α : Type*} [Nominal 𝔸 α] (x : α) :
+theorem supp_supports (𝔸 : Type*) [DecidableEq 𝔸] [Infinite 𝔸] {α : Type*} [Nominal 𝔸 α] (x : α) :
     Supports (Finperm 𝔸) ((supp 𝔸 x) : Set 𝔸) x :=
   supp_supports' x (Nominal.supported x)
 
 @[simp]
-theorem name_supp_eq (a : 𝔸) :
+theorem name_supp_eq [Infinite 𝔸] (a : 𝔸) :
     supp 𝔸 a = {a} := by
   ext b
   rw [mem_supp_iff]
@@ -234,16 +232,16 @@ theorem Finset.smul_eq_of_smul_eq {α β : Type*} [Group β] [MulAction β α]
     rw [smul_eq_iff_eq_inv_smul] at this
     rwa [this] at ha
 
-theorem Finset.finitelySupported {α : Type*} [Nominal 𝔸 α] (s : Finset α) :
+theorem Finset.finitelySupported [Infinite 𝔸] {α : Type*} [Nominal 𝔸 α] (s : Finset α) :
     FinitelySupported 𝔸 s := by
   use s.biUnion (supp 𝔸)
   intro π hπ
   apply Finset.smul_eq_of_smul_eq
   intro x hx
-  apply Nominal.supp_supports x
+  apply Nominal.supp_supports 𝔸 x
   aesop
 
-instance {α : Type*} [Nominal 𝔸 α] : Nominal 𝔸 (Finset α) where
+instance [Infinite 𝔸] {α : Type*} [Nominal 𝔸 α] : Nominal 𝔸 (Finset α) where
   supported := Finset.finitelySupported
 
 -- TODO: The version in mathlib isn't general enough!
@@ -278,145 +276,34 @@ theorem FinitelySupported.of_smul {α : Type*} [MulAction (Finperm 𝔸) α] {x 
   have := h.smul π⁻¹
   rwa [inv_smul_smul] at this
 
-section Set
-open scoped Pointwise
+def MulAction.StrongSupports (G : Type*) {α β : Type*} [Group G] [SMul G α] [SMul G β] (s : Set α) (b : β) :=
+  ∀ g : G, (∀ ⦃a⦄, a ∈ s → g • a = a) ↔ g • b = b
 
-theorem Finset.smul_coe_eq_coe_iff {G α : Type*} [Group G] [MulAction G α]
-    (g : G) (s : Finset α) :
-    g • (s : Set α) = s ↔ g • s = s := by
-  simp only [Set.ext_iff, Finset.mem_coe, Finset.ext_iff,
-    Set.mem_smul_set_iff_inv_smul_mem, Finset.mem_smul_iff]
+theorem MulAction.StrongSupports.supports {G α β : Type*} [Group G] [SMul G α] [SMul G β]
+    {s : Set α} {b : β} (h : StrongSupports G s b) : Supports G s b := by
+  intro π h'
+  rwa [← h]
 
-theorem Finset.supports_coe_iff {α : Type*} [MulAction (Finperm 𝔸) α] (s : Finset α) (t : Set 𝔸) :
-    Supports (Finperm 𝔸) t (s : Set α) ↔ Supports (Finperm 𝔸) t s := by
-  unfold Supports
-  simp only [Finset.smul_coe_eq_coe_iff]
-
-theorem Finset.coe_finitelySupported_iff {α : Type*} [MulAction (Finperm 𝔸) α] (s : Finset α) :
-    FinitelySupported 𝔸 (s : Set α) ↔ FinitelySupported 𝔸 s := by
-  simp only [FinitelySupported, supports_coe_iff]
-
-theorem Set.finitelySupported_of_finite {α : Type*} [Nominal 𝔸 α] (s : Set α) (hs : s.Finite) :
-    FinitelySupported 𝔸 s := by
-  lift s to Finset α using hs
-  rw [Finset.coe_finitelySupported_iff]
-  apply Nominal.supported
-
-omit [Infinite 𝔸] in
-theorem FinitelySupported.compl {α : Type*} [MulAction (Finperm 𝔸) α]
-    {s : Set α} (hs : FinitelySupported 𝔸 s) :
-    FinitelySupported 𝔸 sᶜ := by
-  obtain ⟨t, ht⟩ := hs
-  refine ⟨t, ?_⟩
-  intro π hπ
-  rw [Set.smul_set_compl, ht π hπ]
-
-end Set
-
-set_option linter.unusedVariables false in
-/-- A type alias to endow a type `α` with its discrete nominal structure. -/
-def Discrete (𝔸 : Type*) (α : Type*) :=
-  α
-
-instance {α : Type*} : MulAction (Finperm 𝔸) (Discrete 𝔸 α) where
-  smul _ := id
-  one_smul _ := rfl
-  mul_smul _ _ _ := rfl
-
-instance {α : Type*} : Nominal 𝔸 (Discrete 𝔸 α) where
-  supported := λ _ ↦ ⟨∅, λ _ _ ↦ rfl⟩
-
-class Equivariant (𝔸 : Type*) [DecidableEq 𝔸]
-    {α β : Type*} [MulAction (Finperm 𝔸) α] [MulAction (Finperm 𝔸) β]
-    (f : α → β) : Prop where
-  smul_apply : ∀ π : Finperm 𝔸, ∀ a, π • f a = f (π • a)
-
-attribute [simp] Equivariant.smul_apply
-
-instance {α β : Type*} [MulAction (Finperm 𝔸) α] [MulAction (Finperm 𝔸) β]
-    (f : Discrete 𝔸 α → Discrete 𝔸 β) :
-    Equivariant 𝔸 f := by
-  constructor
-  intro π x
-  rfl
-
-instance {α : Type*} [MulAction (Finperm 𝔸) α] : Equivariant 𝔸 (supp 𝔸 : α → Finset 𝔸) := by
-  constructor
-  intro π x
-  ext a
-  rw [Finset.mem_smul_iff]
-  by_cases hx : FinitelySupported 𝔸 x
-  · rw [mem_supp_iff' x hx, mem_supp_iff' (π • x) (hx.smul π)]
-    constructor
-    · intro h s hs
-      refine (Finset.mem_map' _).mp (h (π⁻¹ • s) ?_)
-      have := hs.smul' π⁻¹
-      rwa [inv_smul_smul] at this
-    · intro h s hs
-      have := h (π • s) (hs.smul' π)
-      rwa [Finset.mem_smul_iff] at this
-  · rw [supp_eq_of_not_finitelySupported x hx, supp_eq_of_not_finitelySupported]
-    · simp only [smul_name_eq, Finset.not_mem_empty]
-    · contrapose! hx
-      exact hx.of_smul
-
-theorem MulAction.Supports.map {α : Type*} [MulAction (Finperm 𝔸) α]
-    {x : α} {s : Set 𝔸} (h : Supports (Finperm 𝔸) s x)
-    {β : Type*} [MulAction (Finperm 𝔸) β] (f : α → β) [Equivariant 𝔸 f] :
-    Supports (Finperm 𝔸) s (f x) := by
-  intro π hπ
-  rw [Equivariant.smul_apply, h π hπ]
-
-theorem MulAction.Supports.of_map {α : Type*} [MulAction (Finperm 𝔸) α]
-    {β : Type*} [MulAction (Finperm 𝔸) β]
-    {x : α} {s : Set 𝔸} {f : α → β} [Equivariant 𝔸 f] (h : Supports (Finperm 𝔸) s (f x))
-    (hf : Function.Injective f) :
-    Supports (Finperm 𝔸) s x := by
-  intro π hπ
-  have := h π hπ
-  rw [Equivariant.smul_apply] at this
-  exact hf this
-
-theorem FinitelySupported.map {α : Type*} [MulAction (Finperm 𝔸) α]
-    {x : α} (h : FinitelySupported 𝔸 x)
-    {β : Type*} [MulAction (Finperm 𝔸) β] (f : α → β) [Equivariant 𝔸 f] :
-    FinitelySupported 𝔸 (f x) := by
-  obtain ⟨s, hs⟩ := h
-  exact ⟨s, hs.map f⟩
-
-theorem FinitelySupported.of_map {α : Type*} [MulAction (Finperm 𝔸) α]
-    {β : Type*} [MulAction (Finperm 𝔸) β]
-    {x : α} {f : α → β} [Equivariant 𝔸 f] (h : FinitelySupported 𝔸 (f x))
-    (hf : Function.Injective f) :
-    FinitelySupported 𝔸 x := by
-  obtain ⟨s, hs⟩ := h
-  exact ⟨s, hs.of_map hf⟩
-
-theorem supp_apply_subset {α β : Type*} [Nominal 𝔸 α] [Nominal 𝔸 β]
-    (f : α → β) [Equivariant 𝔸 f] (x : α) :
-    supp 𝔸 (f x) ⊆ supp 𝔸 x := by
+theorem subset_of_strongSupports [Infinite 𝔸] {s t : Finset 𝔸} {α : Type*} [MulAction (Finperm 𝔸) α] {x : α}
+    (hs : StrongSupports (Finperm 𝔸) (s : Set 𝔸) x)
+    (ht : Supports (Finperm 𝔸) (t : Set 𝔸) x) :
+    s ⊆ t := by
   intro a ha
-  rw [Nominal.mem_supp_iff] at ha ⊢
-  intro s hs
-  exact ha s (hs.map f)
+  by_contra ha'
+  obtain ⟨b, hb⟩ := Infinite.exists_not_mem_finset (t ∪ {a})
+  rw [StrongSupports] at hs
+  have := ht (swap a b) ?_
+  · have := (hs (swap a b)).mpr this ha
+    aesop
+  · intro c hc
+    rw [smul_name_eq, swap_apply_of_ne_of_ne] <;> aesop
 
-theorem supp_apply_eq_of_injective {α β : Type*} [Nominal 𝔸 α] [Nominal 𝔸 β]
-    (f : α → β) [Equivariant 𝔸 f] (hf : Function.Injective f) (x : α) :
-    supp 𝔸 (f x) = supp 𝔸 x := by
+theorem supp_eq_of_strongSupports [Infinite 𝔸] {α : Type*} [MulAction (Finperm 𝔸) α]
+    (x : α) (s : Finset 𝔸) (hs : StrongSupports (Finperm 𝔸) (s : Set 𝔸) x) :
+    supp 𝔸 x = s := by
   apply subset_antisymm
-  · exact supp_apply_subset f x
+  · apply supp_minimal x s hs.supports
   intro a ha
-  rw [Nominal.mem_supp_iff] at ha ⊢
-  intro s hs
-  exact ha s (hs.of_map hf)
-
-theorem finitelySupported_of_surjective {α β : Type*} [Nominal 𝔸 α] [MulAction (Finperm 𝔸) β]
-    (f : α → β) [Equivariant 𝔸 f] (hf : Function.Surjective f) (y : β) :
-    FinitelySupported 𝔸 y := by
-  obtain ⟨x, rfl⟩ := hf y
-  exact (Nominal.supported x).map f
-
-def nominal_of_surjective {α β : Type*} [Nominal 𝔸 α] [MulAction (Finperm 𝔸) β]
-    (f : α → β) [Equivariant 𝔸 f] (hf : Function.Surjective f) :
-    Nominal 𝔸 β where
-  supported := finitelySupported_of_surjective f hf
+  rw [mem_supp_iff' x ⟨s, hs.supports⟩]
+  intro t ht
+  exact subset_of_strongSupports hs ht ha
