@@ -307,3 +307,74 @@ theorem supp_eq_of_strongSupports [Infinite 𝔸] {α : Type*} [MulAction (Finpe
   rw [mem_supp_iff' x ⟨s, hs.supports⟩]
   intro t ht
   exact subset_of_strongSupports hs ht ha
+
+theorem Nominal.mem_supp_iff_names_infinite [Infinite 𝔸] {α : Type*} [Nominal 𝔸 α] (x : α) (a : 𝔸) :
+    a ∈ supp 𝔸 x ↔ {b | swap a b • x ≠ x}.Infinite := by
+  constructor
+  · intro h
+    by_contra h'
+    rw [Set.not_infinite] at h'
+    obtain ⟨t, ht⟩ := h'.exists_finset
+    clear h'
+    rw [mem_supp_iff] at h
+    have := h t ?_
+    · rw [ht] at this
+      simp at this
+    · rw [supports_iff]
+      intro b c hb hc hbc
+      rw [ht, Set.mem_setOf_eq, not_not] at hb hc
+      by_cases hab : a = b
+      · subst hab
+        exact hc
+      by_cases hac : c = a
+      · subst hac
+        rw [swap_comm, hb]
+      · rw [swap_triple b c a hbc hac hab, mul_smul, mul_smul, swap_comm b, swap_comm c, hb, hc, hb]
+  · intro h
+    contrapose h
+    rw [Set.not_infinite]
+    apply (supp 𝔸 x ∪ {a}).finite_toSet.subset
+    intro b hb
+    by_contra hb'
+    have := supp_supports 𝔸 x
+    rw [supports_iff] at this
+    exact hb (this a b h (by aesop) (by aesop))
+
+theorem Nominal.swap_smul_eq_of_swap_smul_eq [Infinite 𝔸] {α : Type*} [Nominal 𝔸 α]
+    (x : α) (a b c : 𝔸) (hab : a ≠ b) (hbc : b ≠ c) (hca : c ≠ a) :
+    swap a b • x = swap a c • x → swap a b • x = swap b c • x := by
+  have := swap_triple b c a hbc hca hab
+  rw [swap_comm b a, swap_comm c a] at this
+  rw [this, mul_smul, mul_smul, smul_left_cancel_iff, ← inv_smul_eq_iff, swap_inv]
+  tauto
+
+theorem Nominal.swap_smul_injOn [Infinite 𝔸] {α : Type*} [Nominal 𝔸 α] (x : α)
+    (a : 𝔸) (ha : a ∈ supp 𝔸 x) :
+    Set.InjOn (swap a · • x) ({b | swap a b • x ≠ x} \ supp 𝔸 x) := by
+  intro b ⟨hb₁, hb₂⟩ c ⟨hc₁, hc₂⟩ h
+  by_contra hbc
+  have h' := Nominal.swap_smul_eq_of_swap_smul_eq x a b c (by aesop) hbc (by aesop) h
+  have := Nominal.supp_supports 𝔸 x
+  rw [supports_iff] at this
+  rw [this b c hb₂ hc₂ hbc] at h'
+  exact hb₁ h'
+
+theorem Nominal.mem_supp_iff_range_infinite [Infinite 𝔸] {α : Type*} [Nominal 𝔸 α]
+    (x : α) (a : 𝔸) :
+    a ∈ supp 𝔸 x ↔ (Set.range (swap a · • x)).Infinite := by
+  constructor
+  · intro ha
+    apply Set.infinite_of_injOn_mapsTo (swap_smul_injOn x a ha)
+    · intro b _
+      use b
+    · apply Set.Infinite.diff
+      · rwa [mem_supp_iff_names_infinite] at ha
+      · exact Finset.finite_toSet (supp 𝔸 x)
+  · intro ha
+    rw [mem_supp_iff_names_infinite]
+    contrapose ha
+    rw [Set.not_infinite] at ha ⊢
+    have := (ha.image (swap a · • x)).union (Set.finite_singleton x)
+    apply this.subset
+    rintro _ ⟨b, rfl⟩
+    by_cases swap a b • x = x <;> aesop
