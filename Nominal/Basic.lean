@@ -171,6 +171,10 @@ theorem supp_supports (𝔸 : Type*) [DecidableEq 𝔸] [Infinite 𝔸] {α : Ty
     Supports (Finperm 𝔸) ((supp 𝔸 x) : Set 𝔸) x :=
   supp_supports' x (Nominal.supported x)
 
+theorem supp_subset_iff [Infinite 𝔸] {α : Type*} [Nominal 𝔸 α] (x : α) (s : Finset 𝔸) :
+    supp 𝔸 x ⊆ s ↔ Supports (Finperm 𝔸) (s : Set 𝔸) x :=
+  ⟨(supp_supports 𝔸 x).mono, supp_minimal x s⟩
+
 @[simp]
 theorem name_supp_eq [Infinite 𝔸] (a : 𝔸) :
     supp 𝔸 a = {a} := by
@@ -359,6 +363,7 @@ theorem Nominal.swap_smul_injOn [Infinite 𝔸] {α : Type*} [Nominal 𝔸 α] (
   rw [this b c hb₂ hc₂ hbc] at h'
   exact hb₁ h'
 
+/-- TODO: This is not in the source material. -/
 theorem Nominal.mem_supp_iff_range_infinite [Infinite 𝔸] {α : Type*} [Nominal 𝔸 α]
     (x : α) (a : 𝔸) :
     a ∈ supp 𝔸 x ↔ (Set.range (swap a · • x)).Infinite := by
@@ -378,3 +383,45 @@ theorem Nominal.mem_supp_iff_range_infinite [Infinite 𝔸] {α : Type*} [Nomina
     apply this.subset
     rintro _ ⟨b, rfl⟩
     by_cases swap a b • x = x <;> aesop
+
+theorem Finset.subset_supp [Infinite 𝔸] {α : Type*} [Nominal 𝔸 α] (s : Finset α) (x : α) (hx : x ∈ s) :
+    supp 𝔸 x ⊆ supp 𝔸 s := by
+  intro a ha
+  rw [Nominal.mem_supp_iff_range_infinite] at ha ⊢
+  contrapose ha
+  rw [Set.not_infinite] at ha ⊢
+  have := ha.biUnion (t := λ t ↦ (t : Set α)) (λ _ _ ↦ finite_toSet _)
+  apply this.subset
+  rintro _ ⟨b, rfl⟩
+  simp only [Set.mem_range, Set.iUnion_exists, Set.iUnion_iUnion_eq', Set.mem_iUnion, mem_coe]
+  use b
+  rwa [Finset.mem_smul_iff, inv_smul_smul]
+
+theorem Finset.supp_subset [Infinite 𝔸] {α : Type*} [Nominal 𝔸 α] (s : Finset α) :
+    supp 𝔸 s ⊆ s.biUnion (supp 𝔸) := by
+  intro a ha
+  contrapose ha
+  simp only [mem_biUnion, not_exists, not_and,
+    Nominal.mem_supp_iff_range_infinite, Set.not_infinite] at ha
+  have := (finite_toSet _).biUnion ha
+  rw [Nominal.mem_supp_iff_range_infinite, Set.not_infinite]
+  apply (this.powerset.preimage (f := Finset.toSet) (λ _ _ _ _ ↦ coe_inj.mp)).subset
+  rintro _ ⟨b, rfl⟩
+  simp only [mem_coe, Set.mem_preimage, Set.mem_powerset_iff]
+  rintro x hx
+  rw [mem_coe, Finset.mem_smul_iff] at hx
+  simp only [Set.mem_iUnion, Set.mem_range]
+  exact ⟨_, hx, b, by rw [smul_inv_smul]⟩
+
+theorem Finset.supp_eq [Infinite 𝔸] {α : Type*} [Nominal 𝔸 α] (s : Finset α) :
+    supp 𝔸 s = s.biUnion (supp 𝔸) := by
+  apply subset_antisymm
+  · exact supp_subset s
+  · intro a ha
+    rw [mem_biUnion] at ha
+    obtain ⟨x, hx, ha⟩ := ha
+    exact subset_supp s x hx ha
+
+theorem Finset.supports_iff [Infinite 𝔸] {α : Type*} [Nominal 𝔸 α] (s : Finset α) (t : Finset 𝔸) :
+    Supports (Finperm 𝔸) (t : Set 𝔸) s ↔ ∀ x ∈ s, Supports (Finperm 𝔸) (t : Set 𝔸) x := by
+  simp only [← Nominal.supp_subset_iff, Finset.supp_eq, biUnion_subset_iff_forall_subset]
