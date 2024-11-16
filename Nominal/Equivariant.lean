@@ -5,7 +5,12 @@ variable {𝔸 : Type*} [DecidableEq 𝔸]
 def Equivariant (𝔸 : Type*) [DecidableEq 𝔸]
     {α β : Type*} [MulAction (Finperm 𝔸) α] [MulAction (Finperm 𝔸) β]
     (f : α → β) : Prop :=
-  ∀ π : Finperm 𝔸, ∀ x : α, π • f x = f (π • x)
+  ∀ π : Finperm 𝔸, ∀ x, π • f x = f (π • x)
+
+def EquivariantRel (𝔸 : Type*) [DecidableEq 𝔸]
+    {α β : Type*} [MulAction (Finperm 𝔸) α] [MulAction (Finperm 𝔸) β]
+    (p : α → β → Prop) : Prop :=
+  ∀ π : Finperm 𝔸, ∀ x y, p (π • x) (π • y) ↔ p x y
 
 theorem supp_equivariant [Infinite 𝔸] {α : Type*} [MulAction (Finperm 𝔸) α] :
     Equivariant 𝔸 (supp 𝔸 : α → Finset 𝔸) := by
@@ -87,3 +92,9 @@ def nominal_of_surjective {α β : Type*} [Nominal 𝔸 α] [MulAction (Finperm 
     (f : α → β) (hf : Function.Surjective f) (hf' : Equivariant 𝔸 f) :
     Nominal 𝔸 β where
   supported := finitelySupported_of_surjective f hf hf'
+
+theorem EquivariantRel.not {α β : Type*} [MulAction (Finperm 𝔸) α] [MulAction (Finperm 𝔸) β]
+    {p : α → β → Prop} (h : EquivariantRel 𝔸 p) : EquivariantRel 𝔸 (λ x y ↦ ¬p x y) := by
+  intro π x y
+  dsimp only
+  rw [h π x y]
