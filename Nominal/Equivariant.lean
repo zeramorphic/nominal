@@ -1,5 +1,7 @@
 import Nominal.Basic
 
+open Finperm
+
 variable {𝔸 : Type*} [DecidableEq 𝔸]
 
 def Equivariant (𝔸 : Type*) [DecidableEq 𝔸]
@@ -7,10 +9,25 @@ def Equivariant (𝔸 : Type*) [DecidableEq 𝔸]
     (f : α → β) : Prop :=
   ∀ π : Finperm 𝔸, ∀ x, π • f x = f (π • x)
 
+def EquivariantPred (𝔸 : Type*) [DecidableEq 𝔸] {α : Type*} [MulAction (Finperm 𝔸) α]
+    (p : α → Prop) : Prop :=
+  ∀ π : Finperm 𝔸, ∀ x, p (π • x) ↔ p x
+
 def EquivariantRel (𝔸 : Type*) [DecidableEq 𝔸]
     {α β : Type*} [MulAction (Finperm 𝔸) α] [MulAction (Finperm 𝔸) β]
     (p : α → β → Prop) : Prop :=
   ∀ π : Finperm 𝔸, ∀ x y, p (π • x) (π • y) ↔ p x y
+
+-- Note: FinitelySupported is already defined.
+
+def FinitelySupportedPred (𝔸 : Type*) [DecidableEq 𝔸] {α : Type*} [MulAction (Finperm 𝔸) α]
+    (p : α → Prop) : Prop :=
+  ∃ s : Finset 𝔸, ∀ π : Finperm 𝔸, (∀ a ∈ s, π • a = a) → ∀ x, p (π • x) ↔ p x
+
+def FinitelySupportedRel (𝔸 : Type*) [DecidableEq 𝔸]
+    {α β : Type*} [MulAction (Finperm 𝔸) α] [MulAction (Finperm 𝔸) β]
+    (p : α → β → Prop) : Prop :=
+  ∃ s : Finset 𝔸, ∀ π : Finperm 𝔸, (∀ a ∈ s, π • a = a) → ∀ x y, p (π • x) (π • y) ↔ p x y
 
 theorem supp_equivariant [Infinite 𝔸] {α : Type*} [MulAction (Finperm 𝔸) α] :
     Equivariant 𝔸 (supp 𝔸 : α → Finset 𝔸) := by
@@ -98,3 +115,39 @@ theorem EquivariantRel.not {α β : Type*} [MulAction (Finperm 𝔸) α] [MulAct
   intro π x y
   dsimp only
   rw [h π x y]
+
+theorem FinitelySupportedPred.not {α : Type*} [MulAction (Finperm 𝔸) α] {p : α → Prop}
+    (hp : FinitelySupportedPred 𝔸 p) :
+    FinitelySupportedPred 𝔸 (λ x ↦ ¬p x) := by
+  obtain ⟨s, hs⟩ := hp
+  use s
+  intro π hπ x
+  dsimp only
+  rw [hs π hπ x]
+
+theorem FinitelySupportedPred.finite_or_finite [Infinite 𝔸]
+    {p : 𝔸 → Prop} (hp : FinitelySupportedPred 𝔸 p) :
+    {x | p x}.Finite ∨ {x | ¬p x}.Finite := by
+  obtain ⟨s, hs⟩ := hp
+  have : ∀ a ∉ s, ∀ b ∉ s, p a ↔ p b := by
+    intro a ha b hb
+    have := hs (swap a b) ?_ b
+    · rwa [smul_name_eq, swap_apply_right] at this
+    · intro c hc
+      rw [smul_name_eq, swap_apply_of_ne_of_ne] <;>
+      · rintro rfl
+        contradiction
+  obtain ⟨b, hb⟩ := Infinite.exists_not_mem_finset s
+  by_cases hb' : p b
+  · right
+    apply s.finite_toSet.subset
+    intro c hc₁
+    by_contra hc₂
+    have := this b hb c hc₂
+    exact hc₁ (this.mp hb')
+  · left
+    apply s.finite_toSet.subset
+    intro c hc₁
+    by_contra hc₂
+    have := this b hb c hc₂
+    exact hb' (this.mpr hc₁)

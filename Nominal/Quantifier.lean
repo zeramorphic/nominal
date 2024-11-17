@@ -2,6 +2,7 @@ import Mathlib.Order.Filter.Cofinite
 import Nominal.Fresh
 
 open Filter
+open scoped Pointwise
 
 variable {𝔸 : Type*}
 
@@ -10,11 +11,11 @@ def NewNames (p : 𝔸 → Prop) : Prop :=
 
 notation3 "ν "(...)", "r:(scoped p => NewNames p) => r
 
-theorem newNames_iff (p : 𝔸 → Prop) :
+theorem newNames_def (p : 𝔸 → Prop) :
     (ν a, p a) ↔ ∀ᶠ a in cofinite, p a :=
   Iff.rfl
 
-theorem newNames_iff' (p : 𝔸 → Prop) :
+theorem newNames_def' (p : 𝔸 → Prop) :
     (ν a, p a) ↔ {a | p a}ᶜ.Finite :=
   Iff.rfl
 
@@ -99,9 +100,79 @@ theorem newNames_imp_distrib_left {p : Prop} {q : 𝔸 → Prop} :
     (ν a, p → q a) ↔ p → ν a, q a :=
   eventually_imp_distrib_left
 
+theorem NewNames.not [Infinite 𝔸] {p : 𝔸 → Prop} :
+    (ν a, ¬p a) → ¬ν a, p a := by
+  intro h₁ h₂
+  have := h₁.and h₂
+  simp only [not_and_self, not_newNames_false] at this
+
+/-- The law of the excluded middle for finitely supported predicates. -/
+theorem newNames_em [DecidableEq 𝔸] [Infinite 𝔸] (p : 𝔸 → Prop)
+    (hp : FinitelySupportedPred 𝔸 p) :
+    (ν a, p a) ∨ (ν a, ¬p a) := by
+  obtain h | h := hp.finite_or_finite
+  · right
+    apply h.subset
+    simp only [Set.compl_setOf, not_not, subset_rfl]
+  · left
+    exact h
+
+theorem NewNames.of_not [DecidableEq 𝔸] [Infinite 𝔸] (p : 𝔸 → Prop)
+    (hp : FinitelySupportedPred 𝔸 p) :
+    (¬ν a, p a) → ν a, ¬p a := by
+  have := newNames_em p hp
+  tauto
+
+theorem newNames_not [DecidableEq 𝔸] [Infinite 𝔸] (p : 𝔸 → Prop)
+    (hp : FinitelySupportedPred 𝔸 p) :
+    (ν a, ¬p a) ↔ (¬ν a, p a) :=
+  ⟨NewNames.not, NewNames.of_not p hp⟩
+
+theorem NewNames.or_left {p : 𝔸 → Prop} (h : ν a, p a) (q : 𝔸 → Prop) :
+    ν a, p a ∨ q a := by
+  apply h.mono
+  exact λ _ ↦ Or.inl
+
+theorem NewNames.or_right {p : 𝔸 → Prop} (h : ν a, p a) (q : 𝔸 → Prop) :
+    ν a, q a ∨ p a := by
+  apply h.mono
+  exact λ _ ↦ Or.inr
+
+theorem newNames_or_left [DecidableEq 𝔸] [Infinite 𝔸] (p q : 𝔸 → Prop) (hp : FinitelySupportedPred 𝔸 p) :
+    (ν a, p a ∨ q a) ↔ (ν a, p a) ∨ (ν a, q a) := by
+  constructor
+  · intro h
+    obtain h' | h' := newNames_em p hp
+    · left
+      exact h'
+    · right
+      apply (h.and h').mono
+      tauto
+  · rintro (h | h)
+    · exact h.or_left q
+    · exact h.or_right p
+
+theorem newNames_or_right [DecidableEq 𝔸] [Infinite 𝔸] (p q : 𝔸 → Prop) (hq : FinitelySupportedPred 𝔸 q) :
+    (ν a, p a ∨ q a) ↔ (ν a, p a) ∨ (ν a, q a) := by
+  have := newNames_or_left q p hq
+  simp only [or_comm (a := q _), or_comm (a := ν a, q a)] at this
+  exact this
+
+theorem newNames_imp_left [DecidableEq 𝔸] [Infinite 𝔸] (p q : 𝔸 → Prop) (hp : FinitelySupportedPred 𝔸 p) :
+    (ν a, p a → q a) ↔ (ν a, p a) → (ν a, q a) := by
+  simp only [imp_iff_not_or]
+  rw [newNames_or_left _ _ hp.not, newNames_not p hp]
+
+theorem newNames_iff [DecidableEq 𝔸] [Infinite 𝔸] (p q : 𝔸 → Prop)
+    (hp : FinitelySupportedPred 𝔸 p) (hq : FinitelySupportedPred 𝔸 q) :
+    (ν a, p a ↔ q a) ↔ ((ν a, p a) ↔ (ν a, q a)) := by
+  conv => lhs; simp only [iff_iff_implies_and_implies]
+  rw [newNames_and, newNames_imp_left p q hp, newNames_imp_left q p hq]
+  tauto
+
 theorem newNames_fresh [DecidableEq 𝔸] [Infinite 𝔸] {α : Type*} [Nominal 𝔸 α] {x : α} :
     ν a : 𝔸, a #[𝔸] x := by
-  simp only [name_fresh_iff, newNames_iff', Set.compl_setOf, Decidable.not_not, Finset.setOf_mem,
+  simp only [name_fresh_iff, newNames_def', Set.compl_setOf, Decidable.not_not, Finset.setOf_mem,
     Finset.finite_toSet]
 
 variable [DecidableEq 𝔸] [Infinite 𝔸] {α β : Type*} [Nominal 𝔸 α] [Nominal 𝔸 β]
