@@ -210,6 +210,82 @@ theorem Prod.supp_mk [Infinite 𝔸] {α β : Type*} [Nominal 𝔸 α] [Nominal 
     · exact supp_apply_subset snd snd_equivariant (x, y)
 
 /-!
+# Equalisers
+-/
+
+def Nominal.Equaliser {α β : Type*} [MulAction (Finperm 𝔸) α] [MulAction (Finperm 𝔸) β]
+    (f g : α → β) (_hf : Equivariant 𝔸 f) (_hg : Equivariant 𝔸 g) :=
+  {x : α // f x = g x}
+
+namespace Nominal.Equaliser
+
+variable {α β : Type*} [MulAction (Finperm 𝔸) α] [MulAction (Finperm 𝔸) β]
+    {f g : α → β} {hf : Equivariant 𝔸 f} {hg : Equivariant 𝔸 g}
+
+protected def val (x : Equaliser f g hf hg) : α :=
+  Subtype.val x
+
+attribute [coe] Equaliser.val
+
+instance : CoeOut (Equaliser f g hf hg) α where
+  coe := Equaliser.val
+
+protected theorem prop (x : Equaliser f g hf hg) :
+    f (x : α) = g (x : α) :=
+  Subtype.prop x
+
+@[ext]
+protected theorem ext {x y : Equaliser f g hf hg} (h : (x : α) = y) : x = y :=
+  Subtype.ext h
+
+theorem val_injective :
+    Function.Injective (Equaliser.val : Equaliser f g hf hg → α) :=
+  Subtype.val_injective
+
+instance : SMul (Finperm 𝔸) (Equaliser f g hf hg) where
+  smul π x := ⟨π • (x : α), by rw [← hf, ← hg, x.prop]⟩
+
+@[simp]
+theorem smul_coe (π : Finperm 𝔸) (x : Equaliser f g hf hg) :
+    ((π • x : Equaliser f g hf hg) : α) = π • (x : α) :=
+  rfl
+
+instance : MulAction (Finperm 𝔸) (Equaliser f g hf hg) where
+  one_smul _ := by
+    ext
+    rw [smul_coe, one_smul]
+  mul_smul _ _ _ := by
+    ext
+    rw [smul_coe, smul_coe, smul_coe, mul_smul]
+
+instance {α β : Type*} [Nominal 𝔸 α] [MulAction (Finperm 𝔸) β]
+    {f g : α → β} {hf : Equivariant 𝔸 f} {hg : Equivariant 𝔸 g}
+    [Infinite 𝔸] : Nominal 𝔸 (Equaliser f g hf hg) where
+  supported x := by
+    use supp 𝔸 (x : α)
+    intro π hπ
+    ext
+    exact supp_supports 𝔸 (x : α) π hπ
+
+theorem val_equivariant : Equivariant 𝔸 (Equaliser.val : Equaliser f g hf hg → α) :=
+  λ _ _ ↦ rfl
+
+def factor (f g : α → β) (hf : Equivariant 𝔸 f) (hg : Equivariant 𝔸 g)
+    {γ : Type*} [MulAction (Finperm 𝔸) γ] (h : γ → α) (hfh : ∀ x, f (h x) = g (h x))
+    (x : γ) : Equaliser f g hf hg :=
+  ⟨h x, hfh x⟩
+
+theorem factor_equivariant {f g : α → β} {hf : Equivariant 𝔸 f} {hg : Equivariant 𝔸 g}
+    {γ : Type*} [MulAction (Finperm 𝔸) γ] {h : γ → α} {hfh : ∀ x, f (h x) = g (h x)}
+    (hh : Equivariant 𝔸 h) :
+    Equivariant 𝔸 (factor f g hf hg h hfh) := by
+  intro π hπ
+  ext
+  exact hh π hπ
+
+end Nominal.Equaliser
+
+/-!
 # Initial and terminal object
 -/
 
@@ -251,6 +327,9 @@ attribute [coe] FS.val
 
 instance {α : Type*} [MulAction (Finperm 𝔸) α] : CoeOut (FS 𝔸 α) α where
   coe := FS.val
+
+theorem FS.prop {α : Type*} [MulAction (Finperm 𝔸) α] (x : FS 𝔸 α) : FinitelySupported 𝔸 (x : α) :=
+  Subtype.prop x
 
 @[ext]
 theorem FS.ext {α : Type*} [MulAction (Finperm 𝔸) α] {x y : FS 𝔸 α} (h : (x : α) = y) : x = y :=
