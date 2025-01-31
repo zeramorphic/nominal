@@ -202,6 +202,12 @@ theorem swap_triple [DecidableEq α] (a b c : α) (h₁ : a ≠ b) (h₂ : b ≠
   simp only [swap_apply_def, mul_apply]
   split_ifs <;> cc
 
+theorem swap_triple' [DecidableEq α] (a b c : α) (h₁ : a ≠ b) (h₂ : b ≠ c) :
+    swap a c = swap a b * swap a c * swap b c := by
+  ext d
+  simp only [swap_apply_def, mul_apply]
+  split_ifs <;> cc
+
 theorem swap_pair [DecidableEq α] (a b c : α) (h₁ : a ≠ b) (h₂ : b ≠ c) :
     swap b c * swap a c = swap a c * swap a b := by
   rw [swap_triple a b c h₁ h₂, ← mul_assoc, ← mul_assoc, swap_swap, one_mul]

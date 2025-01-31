@@ -390,10 +390,24 @@ instance FinpermMap.funLike {α β : Type*} : FunLike (α →ᶠᵖ β) α β wh
   coe := FinpermMap.toFun
   coe_injective' f g h := by cases f; congr
 
+@[ext]
+theorem ext {α β : Type*} {f g : α →ᶠᵖ β} (h : ∀ x, f x = g x) : f = g := by
+  cases f
+  cases g
+  rw [FinpermMap.mk.injEq]
+  ext x
+  exact h x
+
+@[simp]
+theorem FinpermMap.mk_apply {α β : Type*} (f : α → β) (x : α) :
+    (⟨f⟩ : α →ᶠᵖ β) x = f x :=
+  rfl
+
 instance {α β : Type*} [MulAction (Finperm 𝔸) α] [MulAction (Finperm 𝔸) β] :
     SMul (Finperm 𝔸) (α →ᶠᵖ β) where
   smul π f := ⟨λ x ↦ π • f (π⁻¹ • x)⟩
 
+@[simp]
 theorem FinpermMap.smul_def {α β : Type*} [MulAction (Finperm 𝔸) α] [MulAction (Finperm 𝔸) β]
     (f : α →ᶠᵖ β) (x : α) (π : Finperm 𝔸) :
     (π • f) x = π • f (π⁻¹ • x) :=

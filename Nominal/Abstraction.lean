@@ -106,6 +106,12 @@ def lift₂ [SMul (Finperm 𝔸) α] {𝔹 : Type*} [DecidableEq 𝔹] [SMul (Fi
     (λ a b ↦ f a.name a.val b.name b.val)
     (λ _ _ _ _ ↦ hf _ _ _ _ _ _ _ _)
 
+theorem lift_mk [SMul (Finperm 𝔸) α] {β : Sort*} (f : 𝔸 → α → β)
+    (hf : ∀ (a b : 𝔸) (x y : α), (ν c, swap a c • x = swap b c • y) → f a x = f b y)
+    (a : 𝔸) (x : α) :
+    lift f hf (⟨a⟩x) = f a x :=
+  rfl
+
 theorem smul_aux [MulAction (Finperm 𝔸) α] (π : Finperm 𝔸) (a b : 𝔸) (x y : α)
     (h : ν c, swap a c • x = swap b c • y) :
     ⟨π a⟩(π • x) = ⟨π b⟩(π • y) := by
@@ -237,6 +243,11 @@ class NominalDefault (𝔸 α : Type*) [DecidableEq 𝔸] [MulAction (Finperm �
 
 export NominalDefault (default_isGlobalSection)
 
+@[simp]
+theorem smul_default [MulAction (Finperm 𝔸) α] [NominalDefault 𝔸 α] (π : Finperm 𝔸) :
+    π • (default : α) = default :=
+  default_isGlobalSection π
+
 open scoped Classical in
 noncomputable def mapAux [Infinite 𝔸] [Nominal 𝔸 α] [NominalDefault 𝔸 α]
     (a : 𝔸) (x : α) (b : 𝔸) : α :=
@@ -246,13 +257,83 @@ noncomputable def mapAux [Infinite 𝔸] [Nominal 𝔸 α] [NominalDefault 𝔸 
     swap a b • x
 
 theorem mapAux_spec [Infinite 𝔸] [Nominal 𝔸 α] [NominalDefault 𝔸 α]
-    (a b : 𝔸) (x y : α) (h : ν (c : 𝔸), swap a c • x = swap b c • y) :
+    (a b : 𝔸) (x y : α) (h : ν c, swap a c • x = swap b c • y) :
     mapAux a x = mapAux b y := by
-  sorry
+  rw [← mk_eq_iff] at h
+  ext c
+  have := congr_arg (supp 𝔸) h
+  simp only [supp_mk_eq, Finset.ext_iff, Finset.mem_sdiff, Finset.mem_singleton] at this
+  unfold mapAux
+  simp only [supp_mk_eq, Finset.mem_sdiff, Finset.mem_singleton, this]
+  split_ifs with h'
+  · rfl
+  have h'' := h'
+  rw [← this] at h''
+  rw [mk_eq_iff_forall] at h
+  obtain ⟨d, hdx, hdy, hd⟩ : ∃ _ : 𝔸, _ := ((newNames_fresh x).and
+    ((newNames_fresh y).and (newNames_not_mem {a, b, c}))).exists
+  simp only [Finset.mem_insert, Finset.mem_singleton, not_or] at hd
+  have hd' := h d hd.1 hd.2.1 hdx hdy
+  simp only [not_and, Decidable.not_not] at h' h''
+  by_cases hca : c = a
+  · cases hca
+    rw [swap_self, one_smul]
+    by_cases hab : a = b
+    · cases hab
+      rw [swap_self, one_smul]
+      have := h d hd.1 hd.1 hdx hdy
+      rwa [smul_left_cancel_iff] at this
+    · simp only [hab, imp_false] at h'
+      rw [smul_eq_iff_eq_inv_smul, swap_inv] at hd'
+      rw [hd', ← inv_smul_eq_iff, swap_inv, swap_comm b a, smul_smul, smul_smul,
+        ← swap_triple' _ _ _ hab (Ne.symm hd.2.1), swap_smul_eq_of_fresh]
+      · rwa [name_fresh_iff]
+      · exact hdy
+  · simp only [hca, imp_false] at h''
+    by_cases hcb : c = b
+    · cases hcb
+      rw [← inv_smul_eq_iff, swap_inv] at hd'
+      rw [swap_self, one_smul, smul_eq_iff_eq_inv_smul, swap_inv, ← hd', smul_smul,
+        smul_smul, swap_comm a b, ← swap_triple' _ _ _ hca (Ne.symm hd.1), swap_smul_eq_of_fresh]
+      · rwa [name_fresh_iff]
+      · exact hdx
+    · simp only [hcb, imp_false] at h'
+      simp only [ne_eq, name_fresh_iff] at h
+      exact h c hca hcb h'' h'
 
 noncomputable def map [Infinite 𝔸] [Nominal 𝔸 α] [NominalDefault 𝔸 α] (x : [𝔸]α) :
     𝔸 →ₙ[𝔸] α where
   toFun := lift mapAux mapAux_spec x
-  supported' := sorry
+  supported' := by
+    induction x; case mk b x =>
+    use supp 𝔸 x ∪ {b}
+    intro π hπ
+    ext a
+    simp only [Finset.coe_union, Finset.coe_singleton, Set.union_singleton, Set.mem_insert_iff,
+      Finset.mem_coe, smul_name_eq, forall_eq_or_imp] at hπ
+    simp only [lift_mk, FinpermMap.smul_def, smul_name_eq, FinpermMap.mk_apply, mapAux, supp_mk_eq,
+      Finset.mem_sdiff, Finset.mem_singleton, smul_ite, smul_default]
+    split_ifs with h₁ h₂ h₂
+    · rfl
+    · simp only [not_and, Decidable.not_not] at h₂
+      have hb := congr_arg (π⁻¹ ·) hπ.1
+      simp only [inv_apply_self] at hb
+      rw [hb, EmbeddingLike.apply_eq_iff_eq] at h₁
+      simp only [h₁.2, imp_false] at h₂
+      have := hπ.2 (π⁻¹ a) h₁.1
+      rw [apply_inv_self] at this
+      rw [this] at h₂
+      cases h₂ h₁.1
+    · simp only [not_and, Decidable.not_not] at h₁
+      have hb := congr_arg (π⁻¹ ·) hπ.1
+      simp only [inv_apply_self] at hb
+      rw [hb, EmbeddingLike.apply_eq_iff_eq] at h₁
+      simp only [h₂.2, imp_false] at h₁
+      have := hπ.2 a h₂.1
+      rw [← this, inv_apply_self] at h₁
+      cases h₁ h₂.1
+    · simp only [not_and, Decidable.not_not] at h₁ h₂
+      rw [smul_smul, mul_swap, apply_inv_self, hπ.1, mul_smul, smul_left_cancel_iff]
+      exact Nominal.supp_supports 𝔸 x π hπ.2
 
 end Abstract
