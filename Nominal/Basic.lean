@@ -1,7 +1,7 @@
 import Mathlib.GroupTheory.GroupAction.Support
 import Mathlib.Data.Fintype.Card
 import Mathlib.Data.Set.Pointwise.SMul
-import Mathlib.Data.Set.Finite
+import Mathlib.Data.Set.Finite.Lattice
 import Nominal.Finperm
 
 /-!
