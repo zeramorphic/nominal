@@ -23,6 +23,7 @@ theorem NewNames.exists [Infinite 𝔸] {p : 𝔸 → Prop} (h : ν a, p a) :
     ∃ a, p a :=
   Eventually.exists h
 
+@[simp]
 theorem newNames_true :
     ν _ : 𝔸, True :=
   eventually_true _
@@ -170,7 +171,30 @@ theorem newNames_iff [DecidableEq 𝔸] [Infinite 𝔸] (p q : 𝔸 → Prop)
   rw [newNames_and, newNames_imp_left p q hp, newNames_imp_left q p hq]
   tauto
 
-theorem newNames_fresh [DecidableEq 𝔸] [Infinite 𝔸] {α : Type*} [Nominal 𝔸 α] {x : α} :
+theorem NewNames.smul [DecidableEq 𝔸] {p : 𝔸 → Prop} (h : ν a, p a) (π : Finperm 𝔸) :
+    ν a, p (π a) := by
+  rw [newNames_def'] at h ⊢
+  apply (h.image (π⁻¹ ·)).subset
+  intro a ha
+  simp only [Set.mem_image, Set.mem_compl_iff, Set.mem_setOf_eq]
+  exact ⟨_, ha, Finperm.inv_apply_self π a⟩
+
+theorem NewNames.of_smul [DecidableEq 𝔸] {p : 𝔸 → Prop} {π : Finperm 𝔸} (h : ν a, p (π a)) :
+    ν a, p a := by
+  have := h.smul π⁻¹
+  simp only [Finperm.apply_inv_self] at this
+  exact this
+
+theorem newNames_smul [DecidableEq 𝔸] {p : 𝔸 → Prop} (π : Finperm 𝔸) :
+    (ν a, p a) ↔ (ν a, p (π a)) :=
+  ⟨λ h ↦ h.smul π, λ h ↦ h.of_smul⟩
+
+theorem newNames_not_mem [DecidableEq 𝔸] (s : Finset 𝔸) :
+    ν a, a ∉ s := by
+  simp only [newNames_def', Set.compl_setOf, Decidable.not_not, Finset.setOf_mem,
+    Finset.finite_toSet]
+
+theorem newNames_fresh [DecidableEq 𝔸] [Infinite 𝔸] {α : Type*} [Nominal 𝔸 α] (x : α) :
     ν a : 𝔸, a #[𝔸] x := by
   simp only [name_fresh_iff, newNames_def', Set.compl_setOf, Decidable.not_not, Finset.setOf_mem,
     Finset.finite_toSet]

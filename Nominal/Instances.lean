@@ -1,5 +1,5 @@
 import Mathlib.Algebra.Group.Action.Sum
-import Nominal.Equivariant
+import Nominal.Fresh
 
 open MulAction Finperm
 
@@ -208,6 +208,12 @@ theorem Prod.supp_mk [Infinite 𝔸] {α β : Type*} [Nominal 𝔸 α] [Nominal 
   · apply Finset.union_subset
     · exact supp_apply_subset fst fst_equivariant (x, y)
     · exact supp_apply_subset snd snd_equivariant (x, y)
+
+@[simp]
+theorem Prod.fresh_iff [Infinite 𝔸] {α β γ : Type*} [Nominal 𝔸 α] [Nominal 𝔸 β] [Nominal 𝔸 γ]
+    (x : α) (y : β) (z : γ) :
+    z #[𝔸] (x, y) ↔ z #[𝔸] x ∧ z #[𝔸] y := by
+  rw [fresh_def, fresh_def, fresh_def, supp_mk, Finset.disjoint_union_right]
 
 /-!
 # Equalisers

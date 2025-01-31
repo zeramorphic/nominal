@@ -25,6 +25,11 @@ theorem false_of_fresh_of_mem_supp [Infinite 𝔸] (a : 𝔸) (x : α) :
   rw [name_fresh_iff]
   exact id
 
+@[simp]
+theorem name_fresh_name_iff [Infinite 𝔸] (a b : 𝔸) :
+    a #[𝔸] b ↔ a ≠ b := by
+  simp only [name_fresh_iff, Nominal.name_supp_eq, Finset.mem_singleton, ne_eq]
+
 theorem exists_fresh [Infinite 𝔸] (x : α) :
     ∃ a : 𝔸, a #[𝔸] x := by
   simp only [name_fresh_iff]
@@ -39,6 +44,13 @@ theorem swap_smul_eq_of_fresh [Infinite 𝔸] (a b : 𝔸) (x : α) (ha : a #[�
     exact false_of_fresh_of_mem_supp c x ha hc
   · rintro rfl
     exact false_of_fresh_of_mem_supp c x hb hc
+
+theorem Fresh.smul {x : α} {y : β} (h : x #[𝔸] y) (π : Finperm 𝔸) :
+    (π • x) #[𝔸] (π • y) := by
+  simp only [fresh_def, Finset.disjoint_iff_inter_eq_empty, Finset.eq_empty_iff_forall_not_mem,
+    Finset.mem_inter, not_and, Nominal.supp_smul_eq, Finset.mem_smul_iff, smul_name_eq] at h ⊢
+  intro a ha₁ ha₂
+  exact h _ ha₁ ha₂
 
 theorem EquivariantRel.rename_of_fresh [Infinite 𝔸]
     {p : 𝔸 → α → Prop} (h : EquivariantRel 𝔸 p) (a b : 𝔸) (x : α)

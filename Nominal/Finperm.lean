@@ -196,11 +196,15 @@ theorem swap_inv [DecidableEq α] (a b : α) :
     (swap a b)⁻¹ = swap a b := by
   rw [inv_eq_iff_mul_eq_one, swap_swap]
 
-theorem swap_triple [DecidableEq α] (a b c : α) (h₁ : a ≠ b) (h₂ : b ≠ c) (h₃ : c ≠ a) :
+theorem swap_triple [DecidableEq α] (a b c : α) (h₁ : a ≠ b) (h₂ : b ≠ c) :
     swap a b = swap a c * swap b c * swap a c := by
   ext d
   simp only [swap_apply_def, mul_apply]
   split_ifs <;> cc
+
+theorem swap_pair [DecidableEq α] (a b c : α) (h₁ : a ≠ b) (h₂ : b ≠ c) :
+    swap b c * swap a c = swap a c * swap a b := by
+  rw [swap_triple a b c h₁ h₂, ← mul_assoc, ← mul_assoc, swap_swap, one_mul]
 
 def remove [DecidableEq α] (π : Finperm α) (a : α) : Finperm α :=
   ofSubset (π * swap a (π⁻¹ a)) π.support (by
@@ -273,5 +277,25 @@ theorem swap_induction_left [DecidableEq α] (p : Finperm α → Prop)
     rwa [inv_inv] at this
   · aesop
   · aesop
+
+theorem mul_swap [DecidableEq α] (π : Finperm α) (a b : α) :
+    π * swap a b = swap (π a) (π b) * π := by
+  ext c
+  simp only [coe_mul, Function.comp_apply]
+  by_cases ha : c = a
+  · cases ha
+    simp only [swap_apply_left]
+  by_cases hb : c = b
+  · cases hb
+    simp only [swap_apply_right]
+  rw [swap_apply_of_ne_of_ne ha hb, swap_apply_of_ne_of_ne]
+  · simp only [ne_eq, EmbeddingLike.apply_eq_iff_eq]
+    exact ha
+  · simp only [ne_eq, EmbeddingLike.apply_eq_iff_eq]
+    exact hb
+
+theorem swap_mul [DecidableEq α] (π : Finperm α) (a b : α) :
+    swap a b * π = π * swap (π⁻¹ a) (π⁻¹ b) := by
+  rw [mul_swap, apply_inv_self, apply_inv_self]
 
 end Finperm

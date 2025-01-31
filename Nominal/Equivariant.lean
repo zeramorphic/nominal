@@ -18,6 +18,16 @@ def EquivariantRel (𝔸 : Type*) [DecidableEq 𝔸]
     (p : α → β → Prop) : Prop :=
   ∀ π : Finperm 𝔸, ∀ x y, p (π • x) (π • y) ↔ p x y
 
+theorem equivariantRel_of_implies {α β : Type*} [MulAction (Finperm 𝔸) α] [MulAction (Finperm 𝔸) β]
+    {p : α → β → Prop} (h : ∀ π : Finperm 𝔸, ∀ x y, p x y → p (π • x) (π • y)) :
+    EquivariantRel 𝔸 p := by
+  intro π x y
+  constructor
+  · have := h π⁻¹ (π • x) (π • y)
+    simp only [inv_smul_smul] at this
+    exact this
+  · exact h π x y
+
 -- Note: FinitelySupported is already defined.
 
 def FinitelySupportedPred (𝔸 : Type*) [DecidableEq 𝔸] {α : Type*} [MulAction (Finperm 𝔸) α]

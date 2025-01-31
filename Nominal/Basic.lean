@@ -81,7 +81,7 @@ theorem Finperm.inter_supports [Infinite 𝔸] {α : Type*} [MulAction (Finperm 
   intro a b ha hb hab
   obtain ⟨c, hc⟩ := Infinite.exists_not_mem_finset (s ∪ t ∪ {a, b})
   simp at hc
-  rw [swap_triple a b c hab (by tauto) (by tauto), mul_smul, mul_smul]
+  rw [swap_triple a b c hab (by tauto), mul_smul, mul_smul]
   rw [Finset.mem_inter, not_and] at ha hb
   have : swap a c • x = x := by
     by_cases ha' : a ∈ s
@@ -280,6 +280,21 @@ theorem FinitelySupported.of_smul {α : Type*} [MulAction (Finperm 𝔸) α] {x 
   have := h.smul π⁻¹
   rwa [inv_smul_smul] at this
 
+@[simp]
+theorem Nominal.supp_smul_eq {α : Type*} [Nominal 𝔸 α] (x : α) (π : Finperm 𝔸) :
+    supp 𝔸 (π • x) = π • (supp 𝔸 x) := by
+  ext a
+  simp only [mem_supp_iff, Finset.mem_smul_iff]
+  constructor
+  · intro h s hs
+    have := h _ (hs.smul' π)
+    rwa [Finset.mem_smul_iff] at this
+  · intro h s hs
+    have := h (π⁻¹ • s) ?_
+    · rwa [Finset.mem_smul_iff, inv_inv, smul_name_eq, smul_name_eq, apply_inv_self] at this
+    · have := hs.smul' π⁻¹
+      rwa [inv_smul_smul] at this
+
 def MulAction.StrongSupports (G : Type*) {α β : Type*} [Group G] [SMul G α] [SMul G β] (s : Set α) (b : β) :=
   ∀ g : G, (∀ ⦃a⦄, a ∈ s → g • a = a) ↔ g • b = b
 
@@ -327,13 +342,10 @@ theorem Nominal.mem_supp_iff_names_infinite [Infinite 𝔸] {α : Type*} [Nomina
     · rw [supports_iff]
       intro b c hb hc hbc
       rw [ht, Set.mem_setOf_eq, not_not] at hb hc
-      by_cases hab : a = b
-      · subst hab
-        exact hc
       by_cases hac : c = a
       · subst hac
         rw [swap_comm, hb]
-      · rw [swap_triple b c a hbc hac hab, mul_smul, mul_smul, swap_comm b, swap_comm c, hb, hc, hb]
+      · rw [swap_triple b c a hbc hac, mul_smul, mul_smul, swap_comm b, swap_comm c, hb, hc, hb]
   · intro h
     contrapose h
     rw [Set.not_infinite]
@@ -345,9 +357,9 @@ theorem Nominal.mem_supp_iff_names_infinite [Infinite 𝔸] {α : Type*} [Nomina
     exact hb (this a b h (by aesop) (by aesop))
 
 theorem Nominal.swap_smul_eq_of_swap_smul_eq [Infinite 𝔸] {α : Type*} [Nominal 𝔸 α]
-    (x : α) (a b c : 𝔸) (hab : a ≠ b) (hbc : b ≠ c) (hca : c ≠ a) :
+    (x : α) (a b c : 𝔸) (hbc : b ≠ c) (hca : c ≠ a) :
     swap a b • x = swap a c • x → swap a b • x = swap b c • x := by
-  have := swap_triple b c a hbc hca hab
+  have := swap_triple b c a hbc hca
   rw [swap_comm b a, swap_comm c a] at this
   rw [this, mul_smul, mul_smul, smul_left_cancel_iff, ← inv_smul_eq_iff, swap_inv]
   tauto
@@ -357,7 +369,7 @@ theorem Nominal.swap_smul_injOn [Infinite 𝔸] {α : Type*} [Nominal 𝔸 α] (
     Set.InjOn (swap a · • x) ({b | swap a b • x ≠ x} \ supp 𝔸 x) := by
   intro b ⟨hb₁, hb₂⟩ c ⟨hc₁, hc₂⟩ h
   by_contra hbc
-  have h' := Nominal.swap_smul_eq_of_swap_smul_eq x a b c (by aesop) hbc (by aesop) h
+  have h' := Nominal.swap_smul_eq_of_swap_smul_eq x a b c (by aesop) (by aesop) h
   have := Nominal.supp_supports 𝔸 x
   rw [supports_iff] at this
   rw [this b c hb₂ hc₂ hbc] at h'
