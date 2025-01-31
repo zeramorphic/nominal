@@ -210,6 +210,7 @@ theorem supports_of_supports_abstract [MulAction (Finperm 𝔸) α] [Infinite �
   obtain ⟨c, hc⟩ := this.exists
   rwa [hπ.1, smul_left_cancel_iff] at hc
 
+@[simp]
 theorem supp_mk_eq [Nominal 𝔸 α] [Infinite 𝔸] (a : 𝔸) (x : α) :
     supp 𝔸 (⟨a⟩x) = supp 𝔸 x \ {a} := by
   apply subset_antisymm
@@ -223,5 +224,35 @@ theorem supp_mk_eq [Nominal 𝔸 α] [Infinite 𝔸] (a : 𝔸) (x : α) :
   have := hb.1 _ this
   simp only [Finset.mem_union, Finset.mem_singleton, hb.2, or_false] at this
   exact this
+
+/-!
+## Concretion
+-/
+
+/-- A class for types whose default element is a global section, like `Option α`.
+This is used for concretion, to allow us to define the function in question everywhere. -/
+class NominalDefault (𝔸 α : Type*) [DecidableEq 𝔸] [MulAction (Finperm 𝔸) α]
+    extends Inhabited α where
+  default_isGlobalSection : IsGlobalSection 𝔸 (default : α)
+
+export NominalDefault (default_isGlobalSection)
+
+open scoped Classical in
+noncomputable def mapAux [Infinite 𝔸] [Nominal 𝔸 α] [NominalDefault 𝔸 α]
+    (a : 𝔸) (x : α) (b : 𝔸) : α :=
+  if b ∈ supp 𝔸 (⟨a⟩x) then
+    default
+  else
+    swap a b • x
+
+theorem mapAux_spec [Infinite 𝔸] [Nominal 𝔸 α] [NominalDefault 𝔸 α]
+    (a b : 𝔸) (x y : α) (h : ν (c : 𝔸), swap a c • x = swap b c • y) :
+    mapAux a x = mapAux b y := by
+  sorry
+
+noncomputable def map [Infinite 𝔸] [Nominal 𝔸 α] [NominalDefault 𝔸 α] (x : [𝔸]α) :
+    𝔸 →ₙ[𝔸] α where
+  toFun := lift mapAux mapAux_spec x
+  supported' := sorry
 
 end Abstract
