@@ -1,7 +1,7 @@
 import Mathlib.Order.Filter.Cofinite
 import Nominal.Fresh
 
-open Filter
+open Filter Finperm
 open scoped Pointwise
 
 variable {𝔸 : Type*}
@@ -198,6 +198,23 @@ theorem newNames_fresh [DecidableEq 𝔸] [Infinite 𝔸] {α : Type*} [Nominal 
     ν a : 𝔸, a #[𝔸] x := by
   simp only [name_fresh_iff, newNames_def', Set.compl_setOf, Decidable.not_not, Finset.setOf_mem,
     Finset.finite_toSet]
+
+theorem FinitelySupportedMap.new [DecidableEq 𝔸] {α β : Type*}
+    [MulAction (Finperm 𝔸) α] [MulAction (Finperm 𝔸) β] {f : α → β} (hf : FinitelySupportedMap 𝔸 f) :
+    ν (a : 𝔸), ν (b : 𝔸), ∀ x, swap a b • f x = f (swap a b • x) := by
+  obtain ⟨s, hs⟩ := hf
+  have := newNames_not_mem s
+  apply this.mono
+  intro a ha
+  apply this.mono
+  intro b hb x
+  rw [hs]
+  intro c hc
+  rw [smul_name_eq, swap_apply_of_ne_of_ne]
+  · rintro rfl
+    contradiction
+  · rintro rfl
+    contradiction
 
 variable [DecidableEq 𝔸] [Infinite 𝔸] {α β : Type*} [Nominal 𝔸 α] [Nominal 𝔸 β]
 

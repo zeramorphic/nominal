@@ -30,6 +30,11 @@ theorem equivariantRel_of_implies {α β : Type*} [MulAction (Finperm 𝔸) α] 
 
 -- Note: FinitelySupported is already defined.
 
+def FinitelySupportedMap (𝔸 : Type*) [DecidableEq 𝔸]
+    {α β : Type*} [MulAction (Finperm 𝔸) α] [MulAction (Finperm 𝔸) β]
+    (f : α → β) : Prop :=
+  ∃ s : Finset 𝔸, ∀ π : Finperm 𝔸, (∀ a ∈ s, π • a = a) → ∀ x, π • f x = f (π • x)
+
 def FinitelySupportedPred (𝔸 : Type*) [DecidableEq 𝔸] {α : Type*} [MulAction (Finperm 𝔸) α]
     (p : α → Prop) : Prop :=
   ∃ s : Finset 𝔸, ∀ π : Finperm 𝔸, (∀ a ∈ s, π • a = a) → ∀ x, p (π • x) ↔ p x

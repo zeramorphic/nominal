@@ -249,21 +249,21 @@ theorem smul_default [MulAction (Finperm 𝔸) α] [NominalDefault 𝔸 α] (π 
   default_isGlobalSection π
 
 open scoped Classical in
-noncomputable def mapAux [Infinite 𝔸] [Nominal 𝔸 α] [NominalDefault 𝔸 α]
+noncomputable def applyAux [Infinite 𝔸] [Nominal 𝔸 α] [NominalDefault 𝔸 α]
     (a : 𝔸) (x : α) (b : 𝔸) : α :=
   if b ∈ supp 𝔸 (⟨a⟩x) then
     default
   else
     swap a b • x
 
-theorem mapAux_spec [Infinite 𝔸] [Nominal 𝔸 α] [NominalDefault 𝔸 α]
+theorem applyAux_spec [Infinite 𝔸] [Nominal 𝔸 α] [NominalDefault 𝔸 α]
     (a b : 𝔸) (x y : α) (h : ν c, swap a c • x = swap b c • y) :
-    mapAux a x = mapAux b y := by
+    applyAux a x = applyAux b y := by
   rw [← mk_eq_iff] at h
   ext c
   have := congr_arg (supp 𝔸) h
   simp only [supp_mk_eq, Finset.ext_iff, Finset.mem_sdiff, Finset.mem_singleton] at this
-  unfold mapAux
+  unfold applyAux
   simp only [supp_mk_eq, Finset.mem_sdiff, Finset.mem_singleton, this]
   split_ifs with h'
   · rfl
@@ -301,9 +301,9 @@ theorem mapAux_spec [Infinite 𝔸] [Nominal 𝔸 α] [NominalDefault 𝔸 α]
       simp only [ne_eq, name_fresh_iff] at h
       exact h c hca hcb h'' h'
 
-noncomputable def map [Infinite 𝔸] [Nominal 𝔸 α] [NominalDefault 𝔸 α] (x : [𝔸]α) :
+noncomputable def apply [Infinite 𝔸] [Nominal 𝔸 α] [NominalDefault 𝔸 α] (x : [𝔸]α) :
     𝔸 →ₙ[𝔸] α where
-  toFun := lift mapAux mapAux_spec x
+  toFun := lift applyAux applyAux_spec x
   supported' := by
     induction x; case mk b x =>
     use supp 𝔸 x ∪ {b}
@@ -311,7 +311,7 @@ noncomputable def map [Infinite 𝔸] [Nominal 𝔸 α] [NominalDefault 𝔸 α]
     ext a
     simp only [Finset.coe_union, Finset.coe_singleton, Set.union_singleton, Set.mem_insert_iff,
       Finset.mem_coe, smul_name_eq, forall_eq_or_imp] at hπ
-    simp only [lift_mk, FinpermMap.smul_def, smul_name_eq, FinpermMap.mk_apply, mapAux, supp_mk_eq,
+    simp only [lift_mk, FinpermMap.smul_def, smul_name_eq, FinpermMap.mk_apply, applyAux, supp_mk_eq,
       Finset.mem_sdiff, Finset.mem_singleton, smul_ite, smul_default]
     split_ifs with h₁ h₂ h₂
     · rfl
