@@ -1,3 +1,8 @@
--- This module serves as the root of the `Nominal` library.
--- Import modules here that should be built as part of the library.
+import Nominal.Abstraction
 import Nominal.Basic
+import Nominal.Equivariant
+import Nominal.Finperm
+import Nominal.Fresh
+import Nominal.Instances
+import Nominal.Quantifier
+import Nominal.Rel

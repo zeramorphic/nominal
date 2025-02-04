@@ -1,46 +1,9 @@
 import Mathlib.Algebra.Group.Action.Sum
 import Nominal.Fresh
 
-open MulAction Finperm
+open Finperm
 
 variable {𝔸 : Type*} [DecidableEq 𝔸]
-
-/-!
-# Sets
--/
-section Set
-open scoped Pointwise
-
-theorem Finset.smul_coe_eq_coe_iff {G α : Type*} [Group G] [MulAction G α]
-    (g : G) (s : Finset α) :
-    g • (s : Set α) = s ↔ g • s = s := by
-  simp only [Set.ext_iff, Finset.mem_coe, Finset.ext_iff,
-    Set.mem_smul_set_iff_inv_smul_mem, Finset.mem_smul_iff]
-
-theorem Finset.supports_coe_iff {α : Type*} [MulAction (Finperm 𝔸) α] (s : Finset α) (t : Set 𝔸) :
-    Supports (Finperm 𝔸) t (s : Set α) ↔ Supports (Finperm 𝔸) t s := by
-  unfold Supports
-  simp only [Finset.smul_coe_eq_coe_iff]
-
-theorem Finset.coe_finitelySupported_iff {α : Type*} [MulAction (Finperm 𝔸) α] (s : Finset α) :
-    FinitelySupported 𝔸 (s : Set α) ↔ FinitelySupported 𝔸 s := by
-  simp only [FinitelySupported, supports_coe_iff]
-
-theorem Set.finitelySupported_of_finite [Infinite 𝔸] {α : Type*} [Nominal 𝔸 α] (s : Set α) (hs : s.Finite) :
-    FinitelySupported 𝔸 s := by
-  lift s to Finset α using hs
-  rw [Finset.coe_finitelySupported_iff]
-  apply Nominal.supported
-
-theorem FinitelySupported.compl {α : Type*} [MulAction (Finperm 𝔸) α]
-    {s : Set α} (hs : FinitelySupported 𝔸 s) :
-    FinitelySupported 𝔸 sᶜ := by
-  obtain ⟨t, ht⟩ := hs
-  refine ⟨t, ?_⟩
-  intro π hπ
-  rw [Set.smul_set_compl, ht π hπ]
-
-end Set
 
 /-!
 # Discrete structures
@@ -48,44 +11,68 @@ end Set
 
 set_option linter.unusedVariables false in
 /-- A type alias to endow a type `α` with its discrete nominal structure. -/
-def Discrete (𝔸 : Type*) (α : Type*) :=
+def Discrete (𝔸 : Type*) (α : Sort*) :=
   α
 
-instance {α : Type*} : MulAction (Finperm 𝔸) (Discrete 𝔸 α) where
-  smul _ := id
-  one_smul _ := rfl
-  mul_smul _ _ _ := rfl
+instance {α : Sort*} : MulPerm 𝔸 (Discrete 𝔸 α) where
+  perm _ := id
+  one_perm _ := rfl
+  mul_perm _ _ _ := rfl
 
-instance {α : Type*} : Nominal 𝔸 (Discrete 𝔸 α) where
+instance {α : Sort*} : Nominal 𝔸 (Discrete 𝔸 α) where
   supported _ := ⟨∅, λ _ _ ↦ rfl⟩
 
 /-- Typeclass for discrete nominal structures. -/
-class IsDiscrete (𝔸 : Type*) [DecidableEq 𝔸] (α : Type*) [MulAction (Finperm 𝔸) α] : Prop where
-  smul_eq : ∀ π : Finperm 𝔸, ∀ x : α, π • x = x
+class IsDiscrete (𝔸 : Type*) [DecidableEq 𝔸] (α : Sort*) [HasPerm 𝔸 α] : Prop where
+  perm_eq' : ∀ π : Finperm 𝔸, ∀ x : α, π ⬝ x = x
 
-attribute [simp] IsDiscrete.smul_eq
+@[simp]
+theorem IsDiscrete.perm_eq {α : Sort*} [HasPerm 𝔸 α] [IsDiscrete 𝔸 α] :
+    ∀ π : Finperm 𝔸, ∀ x : α, π ⬝ x = x :=
+  IsDiscrete.perm_eq'
 
-instance {α : Type*} : IsDiscrete 𝔸 (Discrete 𝔸 α) where
-  smul_eq _ _ := rfl
+instance {α : Sort*} : IsDiscrete 𝔸 (Discrete 𝔸 α) where
+  perm_eq' _ _ := rfl
 
-theorem equivariant_of_discrete {α β : Type*} [MulAction (Finperm 𝔸) α] [MulAction (Finperm 𝔸) β]
-    (f : Discrete 𝔸 α → Discrete 𝔸 β) :
-    Equivariant 𝔸 f :=
-  λ _ _ ↦ rfl
+instance {α : Sort*} [Subsingleton α] [HasPerm 𝔸 α] : IsDiscrete 𝔸 α where
+  perm_eq' _ _ := Subsingleton.elim _ _
 
-/--
-An object is called a *global section* if it is fixed under all permutations of names.
--/
-def IsGlobalSection (𝔸 : Type*) {α : Type*} [DecidableEq 𝔸] [MulAction (Finperm 𝔸) α] (x : α) :=
-  ∀ π : Finperm 𝔸, π • x = x
+instance : IsDiscrete 𝔸 Prop where
+  perm_eq' _ _ := rfl
 
-theorem isGlobalSection_of_isDiscrete (𝔸 : Type*) [DecidableEq 𝔸]
-    {α : Type*} [MulAction (Finperm 𝔸) α] [IsDiscrete 𝔸 α] (x : α) :
-    IsGlobalSection 𝔸 x := by
-  simp [IsGlobalSection]
+theorem equivariant_of_isDiscrete {α : Sort*} [HasPerm 𝔸 α] [IsDiscrete 𝔸 α] (x : α) :
+    Equivariant 𝔸 x := by
+  intro π
+  rw [IsDiscrete.perm_eq]
 
-theorem isGlobalSection_iff_supp_eq_empty [Infinite 𝔸] {α : Type*} [Nominal 𝔸 α] (x : α) :
-    IsGlobalSection 𝔸 x ↔ supp 𝔸 x = ∅ := by
+theorem finitelySupported_of_isDiscrete {α : Sort*} [HasPerm 𝔸 α] [IsDiscrete 𝔸 α] (x : α) :
+    FinitelySupported 𝔸 x :=
+  (equivariant_of_isDiscrete x).finitelySupported
+
+instance {α β : Sort*} [HasPerm 𝔸 α] [IsDiscrete 𝔸 α] [HasPerm 𝔸 β] [IsDiscrete 𝔸 β] :
+    IsDiscrete 𝔸 (α → β) := by
+  constructor
+  intro π f
+  ext x
+  rw [Function.perm_def, IsDiscrete.perm_eq, IsDiscrete.perm_eq]
+
+theorem Equivariant.not {α : Sort*} [MulPerm 𝔸 α] {p : α → Prop}
+    (h : Equivariant 𝔸 p) :
+    Equivariant 𝔸 (λ x ↦ ¬p x) :=
+  (equivariant_of_isDiscrete (¬ ·)).comp h
+
+theorem Equivariant.not₂ {α β : Sort*} [MulPerm 𝔸 α] [MulPerm 𝔸 β] {p : α → β → Prop}
+    (h : Equivariant 𝔸 p) :
+    Equivariant 𝔸 (λ x y ↦ ¬p x y) :=
+  (equivariant_of_isDiscrete (¬ ·)).comp₂ h
+
+theorem FinitelySupported.not {α : Sort*} [MulPerm 𝔸 α] {p : α → Prop}
+    (h : FinitelySupported 𝔸 p) :
+    FinitelySupported 𝔸 (λ x ↦ ¬p x) :=
+  (finitelySupported_of_isDiscrete (¬ ·)).comp h
+
+theorem equivariant_iff_supp_eq_empty [Infinite 𝔸] {α : Type*} [Nominal 𝔸 α] (x : α) :
+    Equivariant 𝔸 x ↔ supp 𝔸 x = ∅ := by
   constructor
   · intro h
     rw [Finset.eq_empty_iff_forall_not_mem]
@@ -98,42 +85,64 @@ theorem isGlobalSection_iff_supp_eq_empty [Infinite 𝔸] {α : Type*} [Nominal 
     rw [h] at this
     exact this π (λ _ h ↦ by cases h)
 
-theorem IsGlobalSection.map {α : Type*} [MulAction (Finperm 𝔸) α] {x : α} (h : IsGlobalSection 𝔸 x)
-    {β : Type*} [MulAction (Finperm 𝔸) β]
+theorem Equivariant.map {α : Type*} [MulPerm 𝔸 α] {x : α} (h : Equivariant 𝔸 x)
+    {β : Type*} [MulPerm 𝔸 β]
     {f : α → β} (hf : Equivariant 𝔸 f) :
-    IsGlobalSection 𝔸 (f x) := by
+    Equivariant 𝔸 (f x) := by
   intro π
-  rw [hf, h]
+  rw [apply_perm_eq hf, h]
 
-theorem Equivariant.apply_isGlobalSection_of_isDiscrete
-    {α β : Type*} [MulAction (Finperm 𝔸) α] [MulAction (Finperm 𝔸) β] [IsDiscrete 𝔸 α]
+theorem Equivariant.apply_equivariant_of_isDiscrete
+    {α β : Type*} [MulPerm 𝔸 α] [MulPerm 𝔸 β] [IsDiscrete 𝔸 α]
     {f : α → β} (hf : Equivariant 𝔸 f) (x : α) :
-    IsGlobalSection 𝔸 (f x) :=
-  (isGlobalSection_of_isDiscrete 𝔸 x).map hf
+    Equivariant 𝔸 (f x) :=
+  (equivariant_of_isDiscrete x).map hf
 
 /-- One part of the adjunction between the discrete and global sections functors. -/
-def liftDiscrete {α β : Type*} [MulAction (Finperm 𝔸) β] (f : α → β)
-    (_hf : ∀ x, IsGlobalSection 𝔸 (f x)) :
+def liftDiscrete {α β : Type*} [MulPerm 𝔸 β] (f : α → β)
+    (_hf : ∀ x, Equivariant 𝔸 (f x)) :
     Discrete 𝔸 α → β :=
   f
 
-theorem liftDiscrete_equivariant {α β : Type*} [MulAction (Finperm 𝔸) β] (f : α → β)
-    (hf : ∀ x, IsGlobalSection 𝔸 (f x)) :
+theorem liftDiscrete_equivariant {α β : Type*} [MulPerm 𝔸 β] (f : α → β)
+    (hf : ∀ x, Equivariant 𝔸 (f x)) :
     Equivariant 𝔸 (liftDiscrete f hf) := by
-  intro π x
-  rw [IsDiscrete.smul_eq π x, liftDiscrete, hf]
+  intro π
+  ext x
+  rw [Function.perm_def, IsDiscrete.perm_eq π⁻¹ x, liftDiscrete, hf]
 
 /-!
 # Binary coproducts
 -/
 
-theorem Sum.inl_equivariant {α β : Type*} [MulAction (Finperm 𝔸) α] [MulAction (Finperm 𝔸) β] :
-    Equivariant 𝔸 (Sum.inl : α → α ⊕ β) :=
-  λ _ _ ↦ rfl
+instance {α β : Type*} [HasPerm 𝔸 α] [HasPerm 𝔸 β] : HasPerm 𝔸 (α ⊕ β) where
+  perm π x := x.elim (λ x ↦ .inl (π ⬝ x)) (λ x ↦ .inr (π ⬝ x))
 
-theorem Sum.inr_equivariant {α β : Type*} [MulAction (Finperm 𝔸) α] [MulAction (Finperm 𝔸) β] :
-    Equivariant 𝔸 (Sum.inr : β → α ⊕ β) :=
-  λ _ _ ↦ rfl
+omit [DecidableEq 𝔸] in
+@[simp]
+theorem Sum.perm_inl {α β : Type*} [HasPerm 𝔸 α] [HasPerm 𝔸 β] (π : Finperm 𝔸) (x : α) :
+    (π ⬝ .inl x : α ⊕ β) = .inl (π ⬝ x) :=
+  rfl
+
+omit [DecidableEq 𝔸] in
+@[simp]
+theorem Sum.perm_inr {α β : Type*} [HasPerm 𝔸 α] [HasPerm 𝔸 β] (π : Finperm 𝔸) (x : β) :
+    (π ⬝ .inr x : α ⊕ β) = .inr (π ⬝ x) :=
+  rfl
+
+instance {α β : Type*} [MulPerm 𝔸 α] [MulPerm 𝔸 β] : MulPerm 𝔸 (α ⊕ β) where
+  one_perm x := by
+    cases x <;> simp only [Sum.perm_inl, Sum.perm_inr, one_perm]
+  mul_perm π₁ π₂ x := by
+    cases x <;> simp only [Sum.perm_inl, Sum.perm_inr, mul_perm]
+
+theorem Sum.inl_equivariant {α β : Type*} [MulPerm 𝔸 α] [MulPerm 𝔸 β] :
+    Equivariant 𝔸 (Sum.inl : α → α ⊕ β) := by
+  simp only [Function.equivariant_iff, perm_inl, implies_true]
+
+theorem Sum.inr_equivariant {α β : Type*} [MulPerm 𝔸 α] [MulPerm 𝔸 β] :
+    Equivariant 𝔸 (Sum.inr : β → α ⊕ β) := by
+  simp only [Function.equivariant_iff, perm_inr, implies_true]
 
 instance {α β : Type*} [Nominal 𝔸 α] [Nominal 𝔸 β] : Nominal 𝔸 (α ⊕ β) where
   supported := by
@@ -143,12 +152,13 @@ instance {α β : Type*} [Nominal 𝔸 α] [Nominal 𝔸 β] : Nominal 𝔸 (α 
 
 /-- This proves that `α ⊕ β` is the coproduct of `α` and `β` in the category of nominal sets. -/
 def Sum.elim_equivariant {α β γ : Type*}
-    [MulAction (Finperm 𝔸) α] [MulAction (Finperm 𝔸) β] [MulAction (Finperm 𝔸) γ]
+    [MulPerm 𝔸 α] [MulPerm 𝔸 β] [MulPerm 𝔸 γ]
     (f : α → γ) (g : β → γ) (hf : Equivariant 𝔸 f) (hg : Equivariant 𝔸 g) :
     Equivariant 𝔸 (Sum.elim f g) := by
+  rw [Function.equivariant_iff]
   rintro π (x | x)
-  · rw [elim_inl, smul_inl, hf, elim_inl]
-  · rw [elim_inr, smul_inr, hg, elim_inr]
+  · rw [elim_inl, perm_inl, apply_perm_eq hf, elim_inl]
+  · rw [elim_inr, perm_inr, apply_perm_eq hg, elim_inr]
 
 @[simp]
 theorem Sum.supp_inl {α β : Type*} [Nominal 𝔸 α] [Nominal 𝔸 β] (x : α) :
@@ -164,22 +174,40 @@ theorem Sum.supp_inr {α β : Type*} [Nominal 𝔸 α] [Nominal 𝔸 β] (x : β
 # Binary products
 -/
 
-theorem Prod.fst_equivariant {α β : Type*} [MulAction (Finperm 𝔸) α] [MulAction (Finperm 𝔸) β] :
-    Equivariant 𝔸 (Prod.fst : α × β → α) :=
-  λ _ _ ↦ rfl
+instance {α β : Type*} [HasPerm 𝔸 α] [HasPerm 𝔸 β] : HasPerm 𝔸 (α × β) where
+  perm π x := (π ⬝ x.1, π ⬝ x.2)
 
-theorem Prod.snd_equivariant {α β : Type*} [MulAction (Finperm 𝔸) α] [MulAction (Finperm 𝔸) β] :
-    Equivariant 𝔸 (Prod.snd : α × β → β) :=
-  λ _ _ ↦ rfl
+omit [DecidableEq 𝔸] in
+theorem Prod.perm_def {α β : Type*} [HasPerm 𝔸 α] [HasPerm 𝔸 β] (π : Finperm 𝔸) (x : α × β) :
+    π ⬝ x = (π ⬝ x.1, π ⬝ x.2) :=
+  rfl
 
-theorem MulAction.Supports.pair {α β : Type*} [MulAction (Finperm 𝔸) α] [MulAction (Finperm 𝔸) β]
+omit [DecidableEq 𝔸] in
+@[simp]
+theorem Prod.perm_mk {α β : Type*} [HasPerm 𝔸 α] [HasPerm 𝔸 β] (π : Finperm 𝔸) (x : α) (y : β) :
+    π ⬝ (x, y) = (π ⬝ x, π ⬝ y) :=
+  rfl
+
+instance {α β : Type*} [MulPerm 𝔸 α] [MulPerm 𝔸 β] : MulPerm 𝔸 (α × β) where
+  one_perm x := by rw [Prod.perm_def, one_perm, one_perm]
+  mul_perm π₁ π₂ x := by rw [Prod.perm_def, mul_perm, mul_perm]; rfl
+
+theorem Prod.fst_equivariant {α β : Type*} [MulPerm 𝔸 α] [MulPerm 𝔸 β] :
+    Equivariant 𝔸 (Prod.fst : α × β → α) := by
+  simp only [Function.equivariant_iff, Prod.forall, perm_mk, implies_true]
+
+theorem Prod.snd_equivariant {α β : Type*} [MulPerm 𝔸 α] [MulPerm 𝔸 β] :
+    Equivariant 𝔸 (Prod.snd : α × β → β) := by
+  simp only [Function.equivariant_iff, Prod.forall, perm_mk, implies_true]
+
+theorem Supports.pair {α β : Type*} [MulPerm 𝔸 α] [MulPerm 𝔸 β]
     {s t : Finset 𝔸} {x : α} {y : β}
-    (hs : Supports (Finperm 𝔸) (s : Set 𝔸) x) (ht : Supports (Finperm 𝔸) (t : Set 𝔸) y) :
-    Supports (Finperm 𝔸) ((s ∪ t : Finset 𝔸) : Set 𝔸) (x, y) := by
+    (hs : Supports s x) (ht : Supports t y) :
+    Supports (s ∪ t) (x, y) := by
   intro π hπ
   aesop
 
-theorem FinitelySupported.pair {α β : Type*} [MulAction (Finperm 𝔸) α] [MulAction (Finperm 𝔸) β]
+theorem FinitelySupported.pair {α β : Type*} [MulPerm 𝔸 α] [MulPerm 𝔸 β]
     {x : α} {y : β} (hx : FinitelySupported 𝔸 x) (hy : FinitelySupported 𝔸 y) :
     FinitelySupported 𝔸 (x, y) := by
   obtain ⟨s, hs⟩ := hx
@@ -191,11 +219,12 @@ instance {α β : Type*} [Nominal 𝔸 α] [Nominal 𝔸 β] : Nominal 𝔸 (α 
 
 /-- This proves that `α × β` is the product of `α` and `β` in the category of nominal sets. -/
 theorem Prod.pair_equivariant {α β γ : Type*}
-    [MulAction (Finperm 𝔸) α] [MulAction (Finperm 𝔸) β] [MulAction (Finperm 𝔸) γ]
+    [MulPerm 𝔸 α] [MulPerm 𝔸 β] [MulPerm 𝔸 γ]
     (f : γ → α) (g : γ → β) (hf : Equivariant 𝔸 f) (hg : Equivariant 𝔸 g) :
     Equivariant 𝔸 (λ x ↦ (f x, g x)) := by
+  rw [Function.equivariant_iff]
   intro π x
-  rw [smul_mk, hf, hg]
+  rw [perm_mk, apply_perm_eq hf, apply_perm_eq hg]
 
 @[simp]
 theorem Prod.supp_mk [Infinite 𝔸] {α β : Type*} [Nominal 𝔸 α] [Nominal 𝔸 β] (x : α) (y : β) :
@@ -215,17 +244,32 @@ theorem Prod.fresh_iff [Infinite 𝔸] {α β γ : Type*} [Nominal 𝔸 α] [Nom
     z #[𝔸] (x, y) ↔ z #[𝔸] x ∧ z #[𝔸] y := by
   rw [fresh_def, fresh_def, fresh_def, supp_mk, Finset.disjoint_union_right]
 
+theorem Equivariant.uncurry {α β : Type*} {γ : Sort*} [MulPerm 𝔸 α] [MulPerm 𝔸 β] [MulPerm 𝔸 γ]
+    {f : α → β → γ} (h : Equivariant 𝔸 f) : Equivariant 𝔸 (Function.uncurry f) := by
+  simp only [Function.equivariant_iff, funext_iff, Function.perm_def, Prod.forall,
+    Function.uncurry_apply_pair, Prod.perm_mk] at h ⊢
+  intro π x y
+  rw [← h π x (π ⬝ y), inv_perm_perm]
+
+theorem Equivariant.uncurry₂ {α β γ : Type*} {δ : Sort*} [MulPerm 𝔸 α] [MulPerm 𝔸 β]
+    [MulPerm 𝔸 γ] [MulPerm 𝔸 δ] {f : α → β → γ → δ} (h : Equivariant 𝔸 f) :
+    Equivariant 𝔸 (λ x (y : β × γ) ↦ f x y.1 y.2) := by
+  simp only [Function.equivariant_iff, funext_iff, Function.perm_def, Prod.forall,
+    Function.uncurry_apply_pair, Prod.perm_mk] at h ⊢
+  intro π x y z
+  rw [← h π x y z]
+
 /-!
 # Equalisers
 -/
 
-def Nominal.Equaliser {α β : Type*} [MulAction (Finperm 𝔸) α] [MulAction (Finperm 𝔸) β]
+def Nominal.Equaliser {α β : Type*} [MulPerm 𝔸 α] [MulPerm 𝔸 β]
     (f g : α → β) (_hf : Equivariant 𝔸 f) (_hg : Equivariant 𝔸 g) :=
   {x : α // f x = g x}
 
 namespace Nominal.Equaliser
 
-variable {α β : Type*} [MulAction (Finperm 𝔸) α] [MulAction (Finperm 𝔸) β]
+variable {α β : Type*} [MulPerm 𝔸 α] [MulPerm 𝔸 β]
     {f g : α → β} {hf : Equivariant 𝔸 f} {hg : Equivariant 𝔸 g}
 
 protected def val (x : Equaliser f g hf hg) : α :=
@@ -248,23 +292,23 @@ theorem val_injective :
     Function.Injective (Equaliser.val : Equaliser f g hf hg → α) :=
   Subtype.val_injective
 
-instance : SMul (Finperm 𝔸) (Equaliser f g hf hg) where
-  smul π x := ⟨π • (x : α), by rw [← hf, ← hg, x.prop]⟩
+instance : HasPerm 𝔸 (Equaliser f g hf hg) where
+  perm π x := ⟨π ⬝ (x : α), by rw [← apply_perm_eq hf, ← apply_perm_eq hg, x.prop]⟩
 
 @[simp]
-theorem smul_coe (π : Finperm 𝔸) (x : Equaliser f g hf hg) :
-    ((π • x : Equaliser f g hf hg) : α) = π • (x : α) :=
+theorem perm_coe (π : Finperm 𝔸) (x : Equaliser f g hf hg) :
+    ((π ⬝ x : Equaliser f g hf hg) : α) = π ⬝ (x : α) :=
   rfl
 
-instance : MulAction (Finperm 𝔸) (Equaliser f g hf hg) where
-  one_smul _ := by
+instance : MulPerm 𝔸 (Equaliser f g hf hg) where
+  one_perm _ := by
     ext
-    rw [smul_coe, one_smul]
-  mul_smul _ _ _ := by
+    rw [perm_coe, one_perm]
+  mul_perm _ _ _ := by
     ext
-    rw [smul_coe, smul_coe, smul_coe, mul_smul]
+    rw [perm_coe, perm_coe, perm_coe, mul_perm]
 
-instance {α β : Type*} [Nominal 𝔸 α] [MulAction (Finperm 𝔸) β]
+instance {α β : Type*} [Nominal 𝔸 α] [MulPerm 𝔸 β]
     {f g : α → β} {hf : Equivariant 𝔸 f} {hg : Equivariant 𝔸 g}
     [Infinite 𝔸] : Nominal 𝔸 (Equaliser f g hf hg) where
   supported x := by
@@ -273,21 +317,22 @@ instance {α β : Type*} [Nominal 𝔸 α] [MulAction (Finperm 𝔸) β]
     ext
     exact supp_supports 𝔸 (x : α) π hπ
 
-theorem val_equivariant : Equivariant 𝔸 (Equaliser.val : Equaliser f g hf hg → α) :=
-  λ _ _ ↦ rfl
+theorem val_equivariant : Equivariant 𝔸 (Equaliser.val : Equaliser f g hf hg → α) := by
+  simp only [Function.equivariant_iff, perm_coe, implies_true]
 
 def factor (f g : α → β) (hf : Equivariant 𝔸 f) (hg : Equivariant 𝔸 g)
-    {γ : Type*} [MulAction (Finperm 𝔸) γ] (h : γ → α) (hfh : ∀ x, f (h x) = g (h x))
+    {γ : Type*} [MulPerm 𝔸 γ] (h : γ → α) (hfh : ∀ x, f (h x) = g (h x))
     (x : γ) : Equaliser f g hf hg :=
   ⟨h x, hfh x⟩
 
 theorem factor_equivariant {f g : α → β} {hf : Equivariant 𝔸 f} {hg : Equivariant 𝔸 g}
-    {γ : Type*} [MulAction (Finperm 𝔸) γ] {h : γ → α} {hfh : ∀ x, f (h x) = g (h x)}
+    {γ : Type*} [MulPerm 𝔸 γ] {h : γ → α} {hfh : ∀ x, f (h x) = g (h x)}
     (hh : Equivariant 𝔸 h) :
     Equivariant 𝔸 (factor f g hf hg h hfh) := by
+  rw [Function.equivariant_iff]
   intro π hπ
   ext
-  exact hh π hπ
+  exact apply_perm_eq hh π hπ
 
 end Nominal.Equaliser
 
@@ -295,25 +340,24 @@ end Nominal.Equaliser
 # Initial and terminal object
 -/
 
-instance {α : Type*} [Subsingleton α] : MulAction (Finperm 𝔸) α where
-  smul _ := id
-  one_smul _ := rfl
-  mul_smul _ _ _ := rfl
+instance {α : Type*} [Subsingleton α] : MulPerm 𝔸 α where
+  perm _ := id
+  one_perm _ := rfl
+  mul_perm _ _ _ := rfl
 
 instance {α : Type*} [Subsingleton α] : Nominal 𝔸 α where
   supported _ := ⟨∅, λ _ _ ↦ rfl⟩
 
-instance {α : Type*} [Subsingleton α] : IsDiscrete 𝔸 α where
-  smul_eq _ _ := rfl
-
-theorem equivariant_of_isEmpty {α β : Type*} [IsEmpty α] [MulAction (Finperm 𝔸) β] (f : α → β) :
+theorem equivariant_of_isEmpty {α β : Type*} [IsEmpty α] [MulPerm 𝔸 β] (f : α → β) :
     Equivariant 𝔸 f := by
-  intro π x
+  intro π
+  ext x
   cases IsEmpty.false x
 
-theorem equivariant_of_subsingleton {α β : Type*} [MulAction (Finperm 𝔸) α] [Subsingleton β] (f : α → β) :
+theorem equivariant_of_subsingleton {α β : Type*} [MulPerm 𝔸 α] [Subsingleton β] (f : α → β) :
     Equivariant 𝔸 f := by
-  intro π x
+  intro π
+  ext x
   apply Subsingleton.allEq
 
 /-!
@@ -323,62 +367,78 @@ We show that the category of nominal sets is coreflective in the category of `Fi
 -/
 
 /-- A finitely supported element of `α`. -/
-def FS (𝔸 : Type*) [DecidableEq 𝔸] (α : Type*) [MulAction (Finperm 𝔸) α] :=
+def FS (𝔸 : Type*) [DecidableEq 𝔸] (α : Type*) [MulPerm 𝔸 α] :=
   {x : α // FinitelySupported 𝔸 x}
 
-def FS.val {α : Type*} [MulAction (Finperm 𝔸) α] (x : FS 𝔸 α) : α :=
+def FS.val {α : Type*} [MulPerm 𝔸 α] (x : FS 𝔸 α) : α :=
   Subtype.val x
 
 attribute [coe] FS.val
 
-instance {α : Type*} [MulAction (Finperm 𝔸) α] : CoeOut (FS 𝔸 α) α where
+instance {α : Type*} [MulPerm 𝔸 α] : CoeOut (FS 𝔸 α) α where
   coe := FS.val
 
-theorem FS.prop {α : Type*} [MulAction (Finperm 𝔸) α] (x : FS 𝔸 α) : FinitelySupported 𝔸 (x : α) :=
+theorem FS.prop {α : Type*} [MulPerm 𝔸 α] (x : FS 𝔸 α) : FinitelySupported 𝔸 (x : α) :=
   Subtype.prop x
 
 @[ext]
-theorem FS.ext {α : Type*} [MulAction (Finperm 𝔸) α] {x y : FS 𝔸 α} (h : (x : α) = y) : x = y :=
+theorem FS.ext {α : Type*} [MulPerm 𝔸 α] {x y : FS 𝔸 α} (h : (x : α) = y) : x = y :=
   Subtype.ext h
 
-theorem FS.val_injective {α : Type*} [MulAction (Finperm 𝔸) α] :
+theorem FS.val_injective {α : Type*} [MulPerm 𝔸 α] :
     Function.Injective (FS.val : FS 𝔸 α → α) :=
   Subtype.val_injective
 
-instance {α : Type*} [MulAction (Finperm 𝔸) α] : SMul (Finperm 𝔸) (FS 𝔸 α) where
-  smul π x := ⟨π • (x : α), x.prop.smul π⟩
+instance {α : Type*} [MulPerm 𝔸 α] : HasPerm 𝔸 (FS 𝔸 α) where
+  perm π x := ⟨π ⬝ (x : α), x.prop.perm π⟩
 
 @[simp]
-theorem FS.smul_coe {α : Type*} [MulAction (Finperm 𝔸) α] (x : FS 𝔸 α) (π : Finperm 𝔸) :
-    ((π • x : FS 𝔸 α) : α) = π • x :=
+theorem FS.perm_coe {α : Type*} [MulPerm 𝔸 α] (x : FS 𝔸 α) (π : Finperm 𝔸) :
+    ((π ⬝ x : FS 𝔸 α) : α) = π ⬝ x :=
   rfl
 
-instance {α : Type*} [MulAction (Finperm 𝔸) α] : MulAction (Finperm 𝔸) (FS 𝔸 α) where
-  one_smul _ := FS.ext (by rw [FS.smul_coe, one_smul])
-  mul_smul _ _ _ := FS.ext (by simp only [FS.smul_coe, mul_smul])
+instance {α : Type*} [MulPerm 𝔸 α] : MulPerm 𝔸 (FS 𝔸 α) where
+  one_perm _ := FS.ext (by rw [FS.perm_coe, one_perm])
+  mul_perm _ _ _ := FS.ext (by simp only [FS.perm_coe, mul_perm])
 
-theorem FS.val_equivariant {α : Type*} [MulAction (Finperm 𝔸) α] :
-    Equivariant 𝔸 (FS.val (𝔸 := 𝔸) (α := α)) :=
-  λ _ _ ↦ rfl
+theorem FS.val_equivariant {α : Type*} [MulPerm 𝔸 α] :
+    Equivariant 𝔸 (FS.val (𝔸 := 𝔸) (α := α)) := by
+  rw [Function.equivariant_iff]
+  intro π x
+  rfl
 
-instance {α : Type*} [MulAction (Finperm 𝔸) α] : Nominal 𝔸 (FS 𝔸 α) where
+instance {α : Type*} [MulPerm 𝔸 α] : Nominal 𝔸 (FS 𝔸 α) where
   supported x := x.prop.of_map FS.val_injective FS.val_equivariant
 
 @[simp]
-theorem FS.supports_iff {α : Type*} [MulAction (Finperm 𝔸) α] (x : FS 𝔸 α) (s : Finset 𝔸) :
-    Supports (Finperm 𝔸) (s : Set 𝔸) x ↔ Supports (Finperm 𝔸) (s : Set 𝔸) (x : α) :=
+theorem FS.supports_iff {α : Type*} [MulPerm 𝔸 α] (x : FS 𝔸 α) (s : Finset 𝔸) :
+    Supports s x ↔ Supports s (x : α) :=
   ⟨λ h ↦ h.map val val_equivariant, λ h ↦ h.of_map val_injective val_equivariant⟩
 
 /-- The factorisation of an equivariant function from a nominal set through the finitely supported
 elements of its codomain. -/
-def Equivariant.toFS {α β : Type*} [Nominal 𝔸 α] [MulAction (Finperm 𝔸) β]
+def Equivariant.toFS {α β : Type*} [Nominal 𝔸 α] [MulPerm 𝔸 β]
     {f : α → β} (hf : Equivariant 𝔸 f) (x : α) : FS 𝔸 β :=
   ⟨f x, (Nominal.supported x).map f hf⟩
+
+@[simp]
+theorem FS.supp_eq {α : Type*} [MulPerm 𝔸 α] (x : FS 𝔸 α) :
+    supp 𝔸 x = supp 𝔸 x.val := by
+  ext a
+  simp only [Nominal.mem_supp_iff, supports_iff, mem_supp_iff' _ x.prop]
+
+@[simp]
+theorem FS.fresh_iff {α β : Type*} [MulPerm 𝔸 α] [MulPerm 𝔸 β] (x : FS 𝔸 α) (y : β) :
+    y #[𝔸] x ↔ y #[𝔸] x.val := by
+  rw [fresh_def, fresh_def, supp_eq]
 
 /-!
 # Function types
 
-As the `SMul` instance we want to define is incompatible with the usual one, we use a structure.
+As the `perm` instance we want to define is incompatible with the usual one, we use a structure.
+We will never put a `Nominal` instance on a general `Π` type.
+However, we can put various instances on relation types, because this doesn't conflict with
+`Pi.perm` (we don't define a `Nominal` instance for `Prop`).
 -/
 
 structure FinpermMap (α β : Type*) where
@@ -403,48 +463,58 @@ theorem FinpermMap.mk_apply {α β : Type*} (f : α → β) (x : α) :
     (⟨f⟩ : α →ᶠᵖ β) x = f x :=
   rfl
 
-instance {α β : Type*} [MulAction (Finperm 𝔸) α] [MulAction (Finperm 𝔸) β] :
-    SMul (Finperm 𝔸) (α →ᶠᵖ β) where
-  smul π f := ⟨λ x ↦ π • f (π⁻¹ • x)⟩
+instance {α β : Type*} [MulPerm 𝔸 α] [MulPerm 𝔸 β] :
+    HasPerm 𝔸 (α →ᶠᵖ β) where
+  perm π f := ⟨λ x ↦ π ⬝ f (π⁻¹ ⬝ x)⟩
 
 @[simp]
-theorem FinpermMap.smul_def {α β : Type*} [MulAction (Finperm 𝔸) α] [MulAction (Finperm 𝔸) β]
+theorem FinpermMap.perm_def {α β : Type*} [MulPerm 𝔸 α] [MulPerm 𝔸 β]
     (f : α →ᶠᵖ β) (x : α) (π : Finperm 𝔸) :
-    (π • f) x = π • f (π⁻¹ • x) :=
+    (π ⬝ f) x = π ⬝ f (π⁻¹ ⬝ x) :=
   rfl
 
 @[simp]
-theorem FinpermMap.smul_apply_smul {α β : Type*} [MulAction (Finperm 𝔸) α] [MulAction (Finperm 𝔸) β]
+theorem FinpermMap.perm_apply_perm {α β : Type*} [MulPerm 𝔸 α] [MulPerm 𝔸 β]
     (f : α →ᶠᵖ β) (x : α) (π : Finperm 𝔸) :
-    (π • f) (π • x) = π • f x := by
-  rw [smul_def, inv_smul_smul]
+    (π ⬝ f) (π ⬝ x) = π ⬝ f x := by
+  rw [perm_def, inv_perm_perm]
 
-theorem FinpermMap.smul_eq_iff {α β : Type*} [MulAction (Finperm 𝔸) α] [MulAction (Finperm 𝔸) β]
+theorem FinpermMap.perm_eq_iff {α β : Type*} [MulPerm 𝔸 α] [MulPerm 𝔸 β]
     (f : α →ᶠᵖ β) (π : Finperm 𝔸) :
-    π • f = f ↔ ∀ x, π • f x = f (π • x) := by
+    π ⬝ f = f ↔ ∀ x, π ⬝ f x = f (π ⬝ x) := by
   constructor
   · intro h x
-    rw [← smul_apply_smul, h]
+    rw [← perm_apply_perm, h]
   · intro h
     apply DFunLike.ext
     intro x
-    rw [smul_def, h, smul_inv_smul]
+    rw [perm_def, h, perm_inv_perm]
 
-instance {α β : Type*} [MulAction (Finperm 𝔸) α] [MulAction (Finperm 𝔸) β] :
-    MulAction (Finperm 𝔸) (FinpermMap α β) where
-  one_smul _ := by
+instance {α β : Type*} [MulPerm 𝔸 α] [MulPerm 𝔸 β] :
+    MulPerm 𝔸 (FinpermMap α β) where
+  one_perm _ := by
     apply DFunLike.ext
-    simp only [FinpermMap.smul_def, inv_one, one_smul, implies_true]
-  mul_smul _ _ _ := by
+    simp only [FinpermMap.perm_def, inv_one, one_perm, implies_true]
+  mul_perm _ _ _ := by
     apply DFunLike.ext
-    simp only [FinpermMap.smul_def, mul_inv_rev, mul_smul, implies_true]
+    simp only [FinpermMap.perm_def, mul_inv_rev, mul_perm, implies_true]
 
-theorem FinpermMap.supports_iff {α β : Type*} [MulAction (Finperm 𝔸) α] [MulAction (Finperm 𝔸) β]
+theorem FinpermMap.supports_iff {α β : Type*} [MulPerm 𝔸 α] [MulPerm 𝔸 β]
     (f : FinpermMap α β) (s : Finset 𝔸) :
-    Supports (Finperm 𝔸) (s : Set 𝔸) f ↔
-    ∀ π : Finperm 𝔸, (∀ a ∈ s, π a = a) → ∀ x, π • f x = f (π • x) := by
-  simp_rw [← smul_eq_iff]
+    Supports s f ↔
+    ∀ π : Finperm 𝔸, (∀ a ∈ s, π a = a) → ∀ x, π ⬝ f x = f (π ⬝ x) := by
+  simp_rw [← perm_eq_iff]
   rfl
+
+theorem FinitelySupported.graph {α β : Sort*} [MulPerm 𝔸 α] [MulPerm 𝔸 β] {f : α → β}
+    (h : FinitelySupported 𝔸 f) :
+    FinitelySupported 𝔸 (λ x y ↦ f x = y) := by
+  simp only [Function.finitelySupported_iff, funext_iff, Function.perm_def, IsDiscrete.perm_eq,
+    eq_iff_iff] at h ⊢
+  obtain ⟨s, hs⟩ := h
+  use s
+  intro π hπ x y
+  rw [← hs π hπ, perm_eq_iff_eq_inv_perm]
 
 /-!
 # Finitely supported functions
@@ -452,7 +522,7 @@ theorem FinpermMap.supports_iff {α β : Type*} [MulAction (Finperm 𝔸) α] [M
 
 /-- A finitely supported map from `α` to `β`. -/
 structure NominalMap (𝔸 α β : Type*) [DecidableEq 𝔸]
-    [MulAction (Finperm 𝔸) α] [MulAction (Finperm 𝔸) β]
+    [MulPerm 𝔸 α] [MulPerm 𝔸 β]
     extends α →ᶠᵖ β where
   supported' : FinitelySupported 𝔸 toFinpermMap
 
