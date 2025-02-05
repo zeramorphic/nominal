@@ -220,6 +220,26 @@ theorem FinitelySupported.new [DecidableEq 𝔸] {α β : Type*}
   · rintro rfl
     contradiction
 
+theorem finitelySupported_iff [DecidableEq 𝔸] [Infinite 𝔸] {α : Sort*} [MulPerm 𝔸 α] (x : α) :
+    FinitelySupported 𝔸 x ↔ ν (a : 𝔸) (b : 𝔸), swap a b ⬝ x = x := by
+  constructor
+  · rintro ⟨s, hs⟩
+    rw [supports_iff'] at hs
+    apply (newNames_not_mem s).mono
+    intro a ha
+    apply (newNames_not_mem s).mono
+    intro b hb
+    exact hs a b ha hb
+  · intro h
+    simp only [FinitelySupported, supports_iff, ne_eq]
+    rw [newNames_def'] at h
+    use h.toFinset
+    intro a b ha hb hab
+    simp only [Set.Finite.mem_toFinset, Set.mem_compl_iff, Set.mem_setOf_eq, not_not] at ha hb
+    obtain ⟨c, hac, hbc, hcb⟩ := (ha.and (hb.and (newNames_not_mem {b}))).exists
+    simp only [Finset.mem_singleton] at hcb
+    rw [swap_triple a b c hab (Ne.symm hcb), mul_perm, mul_perm, hac, hbc, hac]
+
 /-!
 ## The some/any theorem
 -/
@@ -367,14 +387,14 @@ notation3 "fresh "(...)", "r:(scoped p => freshName p) => r
 
 /-- **The freshness theorem** for functions. -/
 theorem fresh_spec [Nonempty α] (f : 𝔸 → α) (hf₁ : ν a, a #[𝔸] f a) (hf₂ : FinitelySupported 𝔸 f) :
-    ν a, f a = fresh b, f b := by
+    ν a, (fresh b, f b) = f a := by
   have := exists_of_newNames_fresh f.graph ?_ hf₂.graph ?_
   · obtain ⟨x, hx, -⟩ := this
     rw [freshName]
     have := Classical.epsilon_spec (p := λ x ↦ ν a, f a = x) ⟨x, hx⟩
     apply (hx.and this).mono
     rintro a ⟨ha₁, ha₂⟩
-    exact ha₂
+    exact ha₂.symm
   · constructor
     rintro x y a rfl rfl
     rfl

@@ -1,4 +1,5 @@
 import Mathlib.Algebra.Group.Action.Sum
+import Mathlib.Data.Part
 import Nominal.Fresh
 
 open Finperm
@@ -110,6 +111,105 @@ theorem liftDiscrete_equivariant {α β : Type*} [MulPerm 𝔸 β] (f : α → �
   intro π
   ext x
   rw [Function.perm_def, IsDiscrete.perm_eq π⁻¹ x, liftDiscrete, hf]
+
+/-!
+# Option and Part
+-/
+
+instance {α : Type*} [HasPerm 𝔸 α] : HasPerm 𝔸 (Part α) where
+  perm π x := x.map (π ⬝ ·)
+
+omit [DecidableEq 𝔸] in
+theorem Part.perm_def {α : Type*} [HasPerm 𝔸 α] (π : Finperm 𝔸) (x : Part α) :
+    π ⬝ x = x.map (π ⬝ ·) :=
+  rfl
+
+@[simp]
+theorem Part.mem_perm_iff {α : Type*} [MulPerm 𝔸 α] (π : Finperm 𝔸) (x : Part α) (y : α) :
+    y ∈ π ⬝ x ↔ π⁻¹ ⬝ y ∈ x := by
+  rw [Part.perm_def, Part.mem_map_iff]
+  constructor
+  · rintro ⟨a, ha, rfl⟩
+    rwa [inv_perm_perm]
+  · intro h
+    use π⁻¹ ⬝ y
+    rw [perm_inv_perm]
+    exact ⟨h, rfl⟩
+
+instance {α : Type*} [MulPerm 𝔸 α] : MulPerm 𝔸 (Part α) where
+  one_perm := by
+    intro x
+    ext y
+    simp only [Part.mem_perm_iff, inv_one, one_perm]
+  mul_perm := by
+    intro π₁ π₂ x
+    ext y
+    simp only [Part.mem_perm_iff, inv_one, mul_inv_rev, mul_perm]
+
+theorem Part.supports_iff_of_dom {α : Type*} [MulPerm 𝔸 α]
+    {x : Part α} (hx : x.Dom) (s : Finset 𝔸) :
+    Supports s x ↔ Supports s (x.get hx) := by
+  constructor
+  · intro h π hπ
+    have := congr_arg (x.get hx ∈ ·) (h π hπ)
+    simp only [mem_perm_iff, eq_iff_iff] at this
+    have := this.mpr (Part.get_mem hx)
+    have := Part.get_eq_of_mem this hx
+    rwa [perm_eq_iff_eq_inv_perm]
+  · intro h π hπ
+    have := h π hπ
+    ext y
+    rw [mem_perm_iff]
+    constructor
+    · intro h'
+      rw [Part.get_eq_of_mem h' hx] at this
+      rw [perm_inv_perm] at this
+      rwa [← this] at h'
+    · intro h'
+      rw [Part.get_eq_of_mem h' hx, perm_eq_iff_eq_inv_perm] at this
+      rwa [this] at h'
+
+theorem Part.supports_of_not_dom {α : Type*} [MulPerm 𝔸 α]
+    {x : Part α} (hx : ¬x.Dom) (s : Finset 𝔸) :
+    Supports s x := by
+  intro π hπ
+  ext y
+  rw [Part.eq_none_iff'.mpr hx]
+  simp only [mem_perm_iff, Part.not_mem_none]
+
+instance {α : Type*} [Nominal 𝔸 α] : Nominal 𝔸 (Part α) where
+  supported := by
+    rintro ⟨p, x⟩
+    by_cases hp : p
+    · obtain ⟨s, hs⟩ := Nominal.supported (𝔸 := 𝔸) (x hp)
+      use s
+      rwa [Part.supports_iff_of_dom]
+    · use ∅
+      exact Part.supports_of_not_dom hp ∅
+
+theorem Part.supp_eq_of_dom {α : Type*} [Nominal 𝔸 α] {x : Part α} (hx : x.Dom) :
+    supp 𝔸 x = supp 𝔸 (x.get hx) := by
+  ext a
+  simp only [Nominal.mem_supp_iff, supports_iff_of_dom hx]
+
+theorem Part.supp_eq_of_not_dom {α : Type*} [Nominal 𝔸 α] {x : Part α} (hx : ¬x.Dom) :
+    supp 𝔸 x = ∅ := by
+  ext a
+  simp only [Nominal.mem_supp_iff, supports_of_not_dom hx, forall_const, Finset.not_mem_empty,
+    iff_false, not_forall]
+  use ∅
+  exact Finset.not_mem_empty a
+
+theorem Part.fresh_iff_of_dom {α β : Type*} [Nominal 𝔸 α] [MulPerm 𝔸 β]
+    {x : Part α} (hx : x.Dom) (y : β) :
+    y #[𝔸] x ↔ y #[𝔸] x.get hx := by
+  rw [fresh_def, fresh_def, supp_eq_of_dom hx]
+
+theorem Part.fresh_of_not_dom {α β : Type*} [Nominal 𝔸 α]
+    [MulPerm 𝔸 β] {x : Part α} (hx : ¬x.Dom) (y : β) :
+    y #[𝔸] x := by
+  rw [fresh_def, supp_eq_of_not_dom hx]
+  exact Finset.disjoint_empty_right _
 
 /-!
 # Binary coproducts
@@ -527,3 +627,12 @@ structure NominalMap (𝔸 α β : Type*) [DecidableEq 𝔸]
   supported' : FinitelySupported 𝔸 toFinpermMap
 
 notation:25 α " →ₙ[" 𝔸:25 "] " β:0 => NominalMap 𝔸 α β
+
+instance NominalMap.funLike {α β : Type*} [MulPerm 𝔸 α] [MulPerm 𝔸 β] :
+    FunLike (α →ₙ[𝔸] β) α β where
+  coe f := f.toFun
+  coe_injective' f g h := by
+    cases f
+    congr
+    apply DFunLike.coe_injective
+    exact h

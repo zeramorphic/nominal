@@ -56,7 +56,6 @@ def lift [HasPerm 𝔸 α] {β : Sort*} (f : 𝔸 → α → β)
     [𝔸]α → β :=
   Quotient.lift (λ x ↦ f x.name x.val) (λ x y ↦ hf x.name y.name x.val y.val)
 
-@[induction_eliminator]
 theorem ind [HasPerm 𝔸 α] {motive : [𝔸]α → Prop} (mk : ∀ a x, motive (⟨a⟩x)) :
     ∀ x, motive x :=
   Quotient.ind (λ x ↦ mk x.name x.val)
@@ -134,11 +133,11 @@ theorem perm_mk [MulPerm 𝔸 α] {π : Finperm 𝔸} {a : 𝔸} {x : α} :
 instance [MulPerm 𝔸 α] : MulPerm 𝔸 [𝔸]α where
   one_perm := by
     intro x
-    induction x; case mk a x =>
+    induction x using ind; case mk a x =>
     simp only [perm_mk, coe_one, id_eq, one_perm]
   mul_perm := by
     intro π₁ π₂ x
-    induction x; case mk a x =>
+    induction x using ind; case mk a x =>
     simp only [perm_mk, coe_mul, Function.comp_apply, mul_perm]
 
 theorem supports_mk [MulPerm 𝔸 α] {a : 𝔸} {x : α} {s : Finset 𝔸}
@@ -171,7 +170,7 @@ theorem supports_mk [MulPerm 𝔸 α] {a : 𝔸} {x : α} {s : Finset 𝔸}
 instance [Nominal 𝔸 α] [Infinite 𝔸] : Nominal 𝔸 [𝔸]α where
   supported := by
     intro x
-    induction x; case mk a x =>
+    induction x using ind; case mk a x =>
     exact ⟨supp 𝔸 x \ {a}, supports_mk (Nominal.supp_supports 𝔸 x)⟩
 
 theorem mk_eq_iff' [Nominal 𝔸 α] [Infinite 𝔸] {a b : 𝔸} {x y : α} :
@@ -229,6 +228,30 @@ theorem supp_mk_eq [Nominal 𝔸 α] [Infinite 𝔸] (a : 𝔸) (x : α) :
   simp only [Finset.mem_union, Finset.mem_singleton, hb.2, or_false] at this
   exact this
 
+@[simp]
+theorem mk_fresh_iff [Infinite 𝔸] [Nominal 𝔸 α] {a : 𝔸} {x : α} {b : 𝔸} :
+    b #[𝔸] ⟨a⟩x ↔ b #[𝔸] x ∨ a = b := by
+  rw [name_fresh_iff, name_fresh_iff, supp_mk_eq, Finset.mem_sdiff, Finset.mem_singleton]
+  tauto
+
+@[induction_eliminator]
+theorem induction [Infinite 𝔸] [Nominal 𝔸 α] {motive : [𝔸]α → Prop}
+    (mk : ν a, ∀ x, motive (⟨a⟩x)) :
+    ∀ x, motive x := by
+  intro x
+  induction x using ind
+  case mk a x =>
+  obtain ⟨b, hbm, hbx, hba⟩ := (mk.and ((newNames_fresh x).and
+    (newNames_not_mem {a}))).exists
+  rw [Finset.mem_singleton] at hba
+  suffices ⟨a⟩x = ⟨b⟩(swap a b ⬝ x) by
+    rw [this]
+    apply hbm
+  rw [mk_eq_iff']
+  refine Or.inr ⟨Ne.symm hba, ?_, rfl⟩
+  have := hbx.perm (swap a b)
+  rwa [perm_name_eq, swap_apply_right] at this
+
 /-!
 ## Concretion
 -/
@@ -247,16 +270,16 @@ theorem perm_default [MulPerm 𝔸 α] [NominalDefault 𝔸 α] (π : Finperm �
   default_equivariant π
 
 open scoped Classical in
-noncomputable def applyAux [Infinite 𝔸] [Nominal 𝔸 α] [NominalDefault 𝔸 α]
+noncomputable def applyAux [Infinite 𝔸] [Nominal 𝔸 α] (default : α)
     (a : 𝔸) (x : α) (b : 𝔸) : α :=
   if b ∈ supp 𝔸 (⟨a⟩x) then
     default
   else
     swap a b ⬝ x
 
-theorem applyAux_spec [Infinite 𝔸] [Nominal 𝔸 α] [NominalDefault 𝔸 α]
+theorem applyAux_spec [Infinite 𝔸] [Nominal 𝔸 α] (default : α)
     (a b : 𝔸) (x y : α) (h : ν c, swap a c ⬝ x = swap b c ⬝ y) :
-    applyAux a x = applyAux b y := by
+    applyAux default a x = applyAux default b y := by
   rw [← mk_eq_iff] at h
   ext c
   have := congr_arg (supp 𝔸) h
@@ -299,11 +322,16 @@ theorem applyAux_spec [Infinite 𝔸] [Nominal 𝔸 α] [NominalDefault 𝔸 α]
       simp only [ne_eq, name_fresh_iff] at h
       exact h c hca hcb h'' h'
 
-noncomputable def apply [Infinite 𝔸] [Nominal 𝔸 α] [NominalDefault 𝔸 α] (x : [𝔸]α) :
+noncomputable def apply [Infinite 𝔸] [Nominal 𝔸 α] (default : α) :
+    [𝔸]α → 𝔸 → α :=
+  lift (applyAux default) (applyAux_spec default)
+
+noncomputable def apply' [Infinite 𝔸] [Nominal 𝔸 α] [NominalDefault 𝔸 α] (x : [𝔸]α) :
     𝔸 →ₙ[𝔸] α where
-  toFun := lift applyAux applyAux_spec x
+  toFun := apply default x
   supported' := by
-    induction x; case mk b x =>
+    rw [apply]
+    induction x using ind; case mk b x =>
     use supp 𝔸 x ∪ {b}
     intro π hπ
     ext a
@@ -332,5 +360,70 @@ noncomputable def apply [Infinite 𝔸] [Nominal 𝔸 α] [NominalDefault 𝔸 �
     · simp only [not_and, Decidable.not_not] at h₁ h₂
       rw [← mul_perm, mul_swap, apply_inv_self, hπ b (.inr rfl), mul_perm, perm_left_cancel_iff]
       exact Nominal.supp_supports 𝔸 x π (λ a ha ↦ hπ a (.inl ha))
+
+/-!
+## Functoriality
+-/
+
+def applyAux? [MulPerm 𝔸 α]
+    (a : 𝔸) (x : α) (b : 𝔸) : Part α :=
+  ⟨b #[𝔸] ⟨a⟩x, λ _ ↦ swap a b ⬝ x⟩
+
+theorem applyAux?_spec [Infinite 𝔸] [Nominal 𝔸 α] (a b : 𝔸) (x y : α)
+    (h : ν c, swap a c ⬝ x = swap b c ⬝ y) :
+    applyAux? a x = applyAux? b y := by
+  rw [← mk_eq_iff] at h
+  ext c : 1
+  rw [applyAux?, applyAux?]
+  apply Part.ext'
+  · have := congr_arg (c ∈ supp 𝔸 ·) h
+    simp only [supp_mk_eq, Finset.mem_sdiff, Finset.mem_singleton, eq_iff_iff] at this
+    simp only [name_fresh_iff, supp_mk_eq, Finset.mem_sdiff, Finset.mem_singleton,
+      Decidable.not_not]
+    exact not_congr this
+  · intro h₁ h₂
+    dsimp only at h₁ h₂ ⊢
+    rw [mk_eq_iff'] at h
+    obtain (⟨rfl, rfl⟩ | ⟨hab, hay, rfl⟩) := h
+    · rfl
+    simp only [name_fresh_iff, supp_mk_eq, Finset.mem_sdiff, Finset.mem_singleton, not_and,
+      Decidable.not_not, Nominal.supp_perm_eq, Finset.mem_perm_iff, swap_inv, perm_name_eq,
+      swap_apply_left] at h₁ h₂ hay
+    by_cases hca : c = a
+    · cases hca
+      rw [swap_self, one_perm, swap_comm, ← mul_perm, swap_swap, one_perm]
+    by_cases hcb : c = b
+    · cases hcb
+      rw [swap_self, one_perm]
+    simp only [hca, imp_false] at h₁
+    rw [perm_eq_iff_eq_inv_perm, swap_inv, ← mul_perm, ← mul_perm, swap_comm a c, swap_comm b c,
+        ← swap_triple' c a b hca hab, swap_perm_eq_of_fresh]
+    · rwa [name_fresh_iff]
+    · rwa [name_fresh_iff]
+
+noncomputable def apply? [Infinite 𝔸] [Nominal 𝔸 α] :
+    [𝔸]α → 𝔸 → Part α :=
+  lift applyAux? applyAux?_spec
+
+theorem apply?_dom_iff [Infinite 𝔸] [Nominal 𝔸 α] (x : [𝔸]α) (a : 𝔸) :
+    (apply? x a).Dom ↔ a #[𝔸] x := by
+  induction x using ind
+  case mk b x => rfl
+
+theorem mk_apply?_eq [Infinite 𝔸] [Nominal 𝔸 α] {a : 𝔸} {x : α} {b : 𝔸} (hb : b #[𝔸] ⟨a⟩x) :
+    apply? (⟨a⟩x) b = Part.some (swap a b ⬝ x) := by
+  ext y
+  rw [apply?, lift_mk, applyAux?]
+  simp only [Part.mem_mk_iff, exists_prop, Part.mem_some_iff]
+  tauto
+
+noncomputable def elim? [Infinite 𝔸] [Nominal 𝔸 α] (f : 𝔸 → α → β) (x : [𝔸]α) :
+    Part β :=
+  fresh a, (x.apply? a).map (f a)
+
+theorem elim?_spec' [Infinite 𝔸] [Nominal 𝔸 α] [Nominal 𝔸 β] (f : 𝔸 → α → β)
+    (hf : ν a, ∀ x, a #[𝔸] f a x) (hf' : ν (a : 𝔸) (b : 𝔸), swap a b ⬝ f = f) (x : [𝔸]α) :
+    ν a, x.elim? f = (x.apply? a).map (f a) := by
+  sorry
 
 end Abstract

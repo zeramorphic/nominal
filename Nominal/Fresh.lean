@@ -80,6 +80,15 @@ theorem Fresh.perm [Nominal 𝔸 α] [Nominal 𝔸 β] {x : α} {y : β} (h : x 
   intro a ha₁ ha₂
   exact h _ ha₁ ha₂
 
+theorem fresh_perm_iff [Nominal 𝔸 α] [Nominal 𝔸 β] {x : α} {y : β} (π : Finperm 𝔸) :
+    (π ⬝ x) #[𝔸] (π ⬝ y) ↔ x #[𝔸] y := by
+  constructor
+  · intro h
+    have := h.perm π⁻¹
+    rwa [inv_perm_perm, inv_perm_perm] at this
+  · intro h
+    exact h.perm π
+
 theorem Equivariant.rename_of_fresh [Infinite 𝔸] [Nominal 𝔸 α]
     {p : 𝔸 → α → Prop} (h : Equivariant 𝔸 p) (a b : 𝔸) (x : α)
     (ha : a #[𝔸] x) (hb : b #[𝔸] x) :
