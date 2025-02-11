@@ -353,19 +353,23 @@ theorem FinitelySupported.of_perm {α : Sort*} [MulPerm 𝔸 α] {x : α}
   rwa [inv_perm_perm] at this
 
 @[simp]
-theorem Nominal.supp_perm_eq {α : Sort*} [Nominal 𝔸 α] (x : α) (π : Finperm 𝔸) :
+theorem supp_perm_eq {α : Sort*} [MulPerm 𝔸 α] (x : α) (π : Finperm 𝔸) :
     supp 𝔸 (π ⬝ x) = π ⬝ (supp 𝔸 x) := by
   ext a
-  simp only [mem_supp_iff, Finset.mem_perm_iff]
-  constructor
-  · intro h s hs
-    have := h _ (hs.perm π)
-    rwa [Finset.mem_perm_iff] at this
-  · intro h s hs
-    have := h (π⁻¹ ⬝ s) ?_
-    · rwa [Finset.mem_perm_iff, inv_inv, perm_name_eq, perm_name_eq, apply_inv_self] at this
-    · have := hs.perm π⁻¹
-      rwa [inv_perm_perm] at this
+  rw [Finset.mem_perm_iff]
+  by_cases hx : FinitelySupported 𝔸 x
+  · rw [mem_supp_iff' x hx, mem_supp_iff' (π ⬝ x) (hx.perm π)]
+    constructor
+    · intro h s hs
+      have := h (π ⬝ s) (hs.perm π)
+      rwa [Finset.mem_perm_iff] at this
+    · intro h s hs
+      have := h (π⁻¹ ⬝ s) hs.of_perm
+      rwa [Finset.mem_perm_iff, inv_inv, perm_inv_perm] at this
+  · rw [supp_eq_of_not_finitelySupported x hx, supp_eq_of_not_finitelySupported]
+    simp only [Finset.not_mem_empty]
+    intro h
+    exact hx h.of_perm
 
 def StrongSupports {α : Sort*} [MulPerm 𝔸 α] (s : Finset 𝔸) (x : α) :=
   ∀ π : Finperm 𝔸, (∀ a ∈ s, π a = a) ↔ π ⬝ x = x

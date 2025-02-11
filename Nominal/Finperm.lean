@@ -101,6 +101,11 @@ theorem coe_mul [DecidableEq α] (π₁ π₂ : Finperm α) :
   rfl
 
 @[simp]
+theorem one_support [DecidableEq α] :
+    (1 : Finperm α).support = ∅ :=
+  rfl
+
+@[simp]
 theorem inv_apply_self [DecidableEq α] (π : Finperm α) (a : α) :
     π⁻¹ (π a) = a := by
   rw [← mul_apply, inv_mul_cancel, one_apply]
@@ -113,6 +118,11 @@ theorem apply_inv_self [DecidableEq α] (π : Finperm α) (a : α) :
 theorem inv_eq_iff_eq [DecidableEq α] (π : Finperm α) (a b : α) :
     π⁻¹ a = b ↔ a = π b :=
   by aesop
+
+@[simp]
+theorem inv_support [DecidableEq α] (π : Finperm α) :
+    π⁻¹.support = π.support :=
+  rfl
 
 @[simp]
 theorem mk_apply (π : Perm α) (s : Finset α) (hs : ∀ a, a ∈ s ↔ π.toFun a ≠ a) (a : α) :

@@ -68,7 +68,7 @@ theorem fresh_iff_exists_swap_perm_eq [Infinite 𝔸] [Nominal 𝔸 α] (a : �
     exact ⟨b, hb, h b hb⟩
   · rintro ⟨b, hb₁, hb₂⟩
     have := congr_arg (b ∈ supp 𝔸 ·) hb₂
-    simp only [Nominal.supp_perm_eq, Finset.mem_perm_iff, swap_inv, perm_name_eq, swap_apply_right,
+    simp only [supp_perm_eq, Finset.mem_perm_iff, swap_inv, perm_name_eq, swap_apply_right,
       eq_iff_iff] at this
     rw [name_fresh_iff] at hb₁ ⊢
     exact hb₁ ∘ this.mp
@@ -76,7 +76,7 @@ theorem fresh_iff_exists_swap_perm_eq [Infinite 𝔸] [Nominal 𝔸 α] (a : �
 theorem Fresh.perm [Nominal 𝔸 α] [Nominal 𝔸 β] {x : α} {y : β} (h : x #[𝔸] y) (π : Finperm 𝔸) :
     (π ⬝ x) #[𝔸] (π ⬝ y) := by
   simp only [fresh_def, Finset.disjoint_iff_inter_eq_empty, Finset.eq_empty_iff_forall_not_mem,
-    Finset.mem_inter, not_and, Nominal.supp_perm_eq, Finset.mem_perm_iff, perm_name_eq] at h ⊢
+    Finset.mem_inter, not_and, supp_perm_eq, Finset.mem_perm_iff, perm_name_eq] at h ⊢
   intro a ha₁ ha₂
   exact h _ ha₁ ha₂
 

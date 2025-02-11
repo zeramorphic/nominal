@@ -112,6 +112,16 @@ theorem liftDiscrete_equivariant {α β : Type*} [MulPerm 𝔸 β] (f : α → �
   ext x
   rw [Function.perm_def, IsDiscrete.perm_eq π⁻¹ x, liftDiscrete, hf]
 
+theorem FinitelySupported.graph {α β : Sort*} [MulPerm 𝔸 α] [MulPerm 𝔸 β] {f : α → β}
+    (h : FinitelySupported 𝔸 f) :
+    FinitelySupported 𝔸 (λ x y ↦ f x = y) := by
+  simp only [Function.finitelySupported_iff, funext_iff, Function.perm_def, IsDiscrete.perm_eq,
+    eq_iff_iff] at h ⊢
+  obtain ⟨s, hs⟩ := h
+  use s
+  intro π hπ x y
+  rw [← hs π hπ, perm_eq_iff_eq_inv_perm]
+
 /-!
 # Option and Part
 -/
@@ -533,106 +543,91 @@ theorem FS.fresh_iff {α β : Type*} [MulPerm 𝔸 α] [MulPerm 𝔸 β] (x : FS
   rw [fresh_def, fresh_def, supp_eq]
 
 /-!
-# Function types
-
-As the `perm` instance we want to define is incompatible with the usual one, we use a structure.
-We will never put a `Nominal` instance on a general `Π` type.
-However, we can put various instances on relation types, because this doesn't conflict with
-`Pi.perm` (we don't define a `Nominal` instance for `Prop`).
+# Finite permutations
 -/
 
-structure FinpermMap (α β : Type*) where
-  protected toFun : α → β
+instance : HasPerm 𝔸 (Finperm 𝔸) where
+  perm π π' := π * π' * π⁻¹
 
-infixr:25 " →ᶠᵖ " => FinpermMap
-
-instance FinpermMap.funLike {α β : Type*} : FunLike (α →ᶠᵖ β) α β where
-  coe := FinpermMap.toFun
-  coe_injective' f g h := by cases f; congr
-
-@[ext]
-theorem ext {α β : Type*} {f g : α →ᶠᵖ β} (h : ∀ x, f x = g x) : f = g := by
-  cases f
-  cases g
-  rw [FinpermMap.mk.injEq]
-  ext x
-  exact h x
-
-@[simp]
-theorem FinpermMap.mk_apply {α β : Type*} (f : α → β) (x : α) :
-    (⟨f⟩ : α →ᶠᵖ β) x = f x :=
+theorem Finperm.perm_def (π π' : Finperm 𝔸) :
+    π ⬝ π' = π * π' * π⁻¹ :=
   rfl
 
-instance {α β : Type*} [MulPerm 𝔸 α] [MulPerm 𝔸 β] :
-    HasPerm 𝔸 (α →ᶠᵖ β) where
-  perm π f := ⟨λ x ↦ π ⬝ f (π⁻¹ ⬝ x)⟩
+instance : MulPerm 𝔸 (Finperm 𝔸) where
+  one_perm π := by rw [Finperm.perm_def, one_mul, inv_one, mul_one]
+  mul_perm π₁ π₂ π := by simp only [perm_def, mul_assoc, mul_inv_rev]
+
+theorem Finperm.support_supports (π : Finperm 𝔸) :
+    Supports π.support π := by
+  intro π' ha
+  ext a
+  simp only [perm_def, coe_mul, Function.comp_apply]
+  by_cases ha' : π'⁻¹ a ∈ π.support
+  · have := ha (π'⁻¹ a) ha'
+    rw [apply_inv_self] at this
+    rw [← this]
+    by_cases ha'' : π a ∈ π.support
+    · rw [ha (π a) ha'']
+    · rw [mem_support_iff, not_not, EmbeddingLike.apply_eq_iff_eq] at ha''
+      rw [ha'']
+      conv_lhs => rw [this, apply_inv_self]
+  · rw [mem_support_iff, not_not] at ha'
+    rw [ha', apply_inv_self]
+    by_cases ha'' : a ∈ π.support
+    · have := ha a ha''
+      rw [eq_comm, ← inv_eq_iff_eq] at this
+      rw [this] at ha'
+      rw [ha']
+    · rw [mem_support_iff, not_not] at ha''
+      rw [ha'']
+
+theorem Finperm.support_subset_of_supports [Infinite 𝔸] {π : Finperm 𝔸} {s : Finset 𝔸}
+    (hs : Supports s π) :
+    π.support ⊆ s := by
+  intro a ha
+  by_contra ha'
+  obtain ⟨b, hb⟩ := Infinite.exists_not_mem_finset (π.support ∪ s)
+  rw [Finset.mem_union, not_or] at hb
+  have := hs (swap a b) ?_
+  · suffices a = b by cases this; tauto
+    rw [mem_support_iff, not_not] at hb
+    have := congr_arg (· (π⁻¹ b)) this
+    simp only [perm_def, swap_inv, coe_mul, Function.comp_apply, apply_inv_self] at this
+    rw [eq_comm, ← inv_eq_iff_eq] at hb
+    rw [mem_support_iff] at ha
+    rw [hb.1, swap_apply_right, swap_apply_of_ne_of_ne ha] at this
+    · rw [inv_eq_iff_eq] at hb
+      rwa [hb.1, EmbeddingLike.apply_eq_iff_eq] at this
+    · rintro rfl
+      rw [inv_apply_self] at hb
+      rw [← hb.1] at ha
+      contradiction
+  · intro c hc
+    rw [swap_apply_of_ne_of_ne]
+    · rintro rfl; contradiction
+    · rintro rfl; tauto
+
+instance : Nominal 𝔸 (Finperm 𝔸) where
+  supported π := ⟨π.support, π.support_supports⟩
 
 @[simp]
-theorem FinpermMap.perm_def {α β : Type*} [MulPerm 𝔸 α] [MulPerm 𝔸 β]
-    (f : α →ᶠᵖ β) (x : α) (π : Finperm 𝔸) :
-    (π ⬝ f) x = π ⬝ f (π⁻¹ ⬝ x) :=
-  rfl
+theorem Finperm.supp_eq [Infinite 𝔸] (π : Finperm 𝔸) :
+    supp 𝔸 π = π.support := by
+  apply subset_antisymm
+  · apply supp_minimal
+    exact π.support_supports
+  · apply support_subset_of_supports
+    apply Nominal.supp_supports
 
 @[simp]
-theorem FinpermMap.perm_apply_perm {α β : Type*} [MulPerm 𝔸 α] [MulPerm 𝔸 β]
-    (f : α →ᶠᵖ β) (x : α) (π : Finperm 𝔸) :
-    (π ⬝ f) (π ⬝ x) = π ⬝ f x := by
-  rw [perm_def, inv_perm_perm]
+theorem Finperm.fresh_iff [Infinite 𝔸] (π : Finperm 𝔸) {α : Type*} [MulPerm 𝔸 α] (x : α) :
+    π #[𝔸] x ↔ ∀ a ∈ supp 𝔸 x, π a = a := by
+  simp only [fresh_def, supp_eq, Finset.disjoint_iff_inter_eq_empty,
+    Finset.eq_empty_iff_forall_not_mem, Finset.mem_inter, mem_support_iff, ne_eq, not_and,
+    not_imp_not]
 
-theorem FinpermMap.perm_eq_iff {α β : Type*} [MulPerm 𝔸 α] [MulPerm 𝔸 β]
-    (f : α →ᶠᵖ β) (π : Finperm 𝔸) :
-    π ⬝ f = f ↔ ∀ x, π ⬝ f x = f (π ⬝ x) := by
-  constructor
-  · intro h x
-    rw [← perm_apply_perm, h]
-  · intro h
-    apply DFunLike.ext
-    intro x
-    rw [perm_def, h, perm_inv_perm]
-
-instance {α β : Type*} [MulPerm 𝔸 α] [MulPerm 𝔸 β] :
-    MulPerm 𝔸 (FinpermMap α β) where
-  one_perm _ := by
-    apply DFunLike.ext
-    simp only [FinpermMap.perm_def, inv_one, one_perm, implies_true]
-  mul_perm _ _ _ := by
-    apply DFunLike.ext
-    simp only [FinpermMap.perm_def, mul_inv_rev, mul_perm, implies_true]
-
-theorem FinpermMap.supports_iff {α β : Type*} [MulPerm 𝔸 α] [MulPerm 𝔸 β]
-    (f : FinpermMap α β) (s : Finset 𝔸) :
-    Supports s f ↔
-    ∀ π : Finperm 𝔸, (∀ a ∈ s, π a = a) → ∀ x, π ⬝ f x = f (π ⬝ x) := by
-  simp_rw [← perm_eq_iff]
-  rfl
-
-theorem FinitelySupported.graph {α β : Sort*} [MulPerm 𝔸 α] [MulPerm 𝔸 β] {f : α → β}
-    (h : FinitelySupported 𝔸 f) :
-    FinitelySupported 𝔸 (λ x y ↦ f x = y) := by
-  simp only [Function.finitelySupported_iff, funext_iff, Function.perm_def, IsDiscrete.perm_eq,
-    eq_iff_iff] at h ⊢
-  obtain ⟨s, hs⟩ := h
-  use s
-  intro π hπ x y
-  rw [← hs π hπ, perm_eq_iff_eq_inv_perm]
-
-/-!
-# Finitely supported functions
--/
-
-/-- A finitely supported map from `α` to `β`. -/
-structure NominalMap (𝔸 α β : Type*) [DecidableEq 𝔸]
-    [MulPerm 𝔸 α] [MulPerm 𝔸 β]
-    extends α →ᶠᵖ β where
-  supported' : FinitelySupported 𝔸 toFinpermMap
-
-notation:25 α " →ₙ[" 𝔸:25 "] " β:0 => NominalMap 𝔸 α β
-
-instance NominalMap.funLike {α β : Type*} [MulPerm 𝔸 α] [MulPerm 𝔸 β] :
-    FunLike (α →ₙ[𝔸] β) α β where
-  coe f := f.toFun
-  coe_injective' f g h := by
-    cases f
-    congr
-    apply DFunLike.coe_injective
-    exact h
+theorem perm_eq_of_fresh [Infinite 𝔸] {π : Finperm 𝔸} {α : Type*} [Nominal 𝔸 α] {x : α}
+    (h : π #[𝔸] x) :
+    π ⬝ x = x := by
+  apply Nominal.supp_supports 𝔸
+  rwa [Finperm.fresh_iff] at h
