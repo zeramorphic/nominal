@@ -1,4 +1,5 @@
 import Mathlib.Data.Finset.Card
+import Mathlib.Data.Fintype.Card
 import Mathlib.Logic.Equiv.Defs
 
 open Equiv
@@ -49,6 +50,11 @@ def ofSubset [DecidableEq α] (π : Perm α) (s : Finset α) (hs : ∀ a, π a �
   support := s.filter (λ a ↦ π a ≠ a)
   mem_support_iff' := by aesop
   __ := π
+
+theorem ofSubset_support_subset [DecidableEq α]
+    {π : Perm α} {s : Finset α} {hs : ∀ a, π a ≠ a → a ∈ s} :
+    (ofSubset π s hs).support ⊆ s :=
+  Finset.filter_subset _ _
 
 protected def refl (α : Type*) : Finperm α where
   support := ∅
@@ -105,6 +111,15 @@ theorem one_support [DecidableEq α] :
     (1 : Finperm α).support = ∅ :=
   rfl
 
+theorem mul_support_subset [DecidableEq α] (π₁ π₂ : Finperm α) :
+    (π₁ * π₂).support ⊆ π₁.support ∪ π₂.support := by
+  apply ofSubset_support_subset.trans (subset_of_eq (Finset.union_comm _ _))
+  simp [mem_support_iff]
+  intro a
+  contrapose!
+  rintro ⟨ha₁, ha₂⟩
+  rw [ha₁, ha₂]
+
 @[simp]
 theorem inv_apply_self [DecidableEq α] (π : Finperm α) (a : α) :
     π⁻¹ (π a) = a := by
@@ -115,7 +130,7 @@ theorem apply_inv_self [DecidableEq α] (π : Finperm α) (a : α) :
     π (π⁻¹ a) = a := by
   rw [← mul_apply, mul_inv_cancel, one_apply]
 
-theorem inv_eq_iff_eq [DecidableEq α] (π : Finperm α) (a b : α) :
+theorem inv_apply_eq_iff_eq [DecidableEq α] (π : Finperm α) (a b : α) :
     π⁻¹ a = b ↔ a = π b :=
   by aesop
 
@@ -313,5 +328,40 @@ theorem mul_swap [DecidableEq α] (π : Finperm α) (a b : α) :
 theorem swap_mul [DecidableEq α] (π : Finperm α) (a b : α) :
     swap a b * π = π * swap (π⁻¹ a) (π⁻¹ b) := by
   rw [mul_swap, apply_inv_self, apply_inv_self]
+
+theorem exists_fresh [DecidableEq α] [Infinite α] (s t : Finset α) :
+    ∃ π : Finperm α, (∀ a ∈ s, π a ∉ t) ∧ (∀ a ∈ t \ s, π a = a) := by
+  induction s using Finset.cons_induction_on
+  case h₁ =>
+    use 1
+    simp only [Finset.not_mem_empty, coe_one, id_eq, IsEmpty.forall_iff, implies_true,
+      Finset.sdiff_empty, and_self]
+  case h₂ a s h ih =>
+    obtain ⟨π, hπ₁, hπ₂⟩ := ih
+    simp only [Finset.mem_sdiff, Finset.mem_union, Finset.mem_singleton, and_imp] at hπ₂
+    obtain ⟨b, hb⟩ := Infinite.exists_not_mem_finset (s ∪ t ∪ π.support)
+    simp only [Finset.union_assoc, Finset.mem_union, Finset.mem_singleton, mem_support_iff, ne_eq,
+      not_or, Decidable.not_not] at hb
+    refine ⟨π * swap a b, ?_, ?_⟩
+    · intro c hc₁ hc₂
+      rw [Finset.cons_eq_insert, Finset.mem_insert] at hc₁
+      rw [coe_mul, Function.comp_apply] at hc₂
+      obtain rfl | hc₁ := hc₁
+      · rw [swap_apply_left, hb.2.2] at hc₂
+        tauto
+      · rw [swap_apply_of_ne_of_ne] at hc₂
+        · have := hπ₁ c hc₁
+          tauto
+        · rintro rfl
+          contradiction
+        · rintro rfl
+          tauto
+    · intro c hc
+      simp only [Finset.cons_eq_insert, Finset.mem_sdiff, Finset.mem_insert, not_or] at hc
+      rw [coe_mul, Function.comp_apply, swap_apply_of_ne_of_ne, hπ₂ c hc.1 hc.2.2]
+      · rintro rfl
+        tauto
+      · rintro rfl
+        tauto
 
 end Finperm

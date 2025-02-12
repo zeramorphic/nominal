@@ -1,4 +1,3 @@
-import Mathlib.Data.Fintype.Card
 import Mathlib.Data.Set.Finite.Lattice
 import Nominal.Finperm
 
@@ -502,7 +501,7 @@ theorem Finset.supp_subset [Infinite 𝔸] {α : Type*} [Nominal 𝔸 α] (s : F
   simp only [Set.mem_iUnion, Set.mem_range]
   exact ⟨_, hx, b, by rw [perm_inv_perm]⟩
 
-theorem Finset.supp_eq [Infinite 𝔸] {α : Type*} [Nominal 𝔸 α] (s : Finset α) :
+protected theorem Finset.supp_eq [Infinite 𝔸] {α : Type*} [Nominal 𝔸 α] (s : Finset α) :
     supp 𝔸 s = s.biUnion (supp 𝔸) := by
   apply subset_antisymm
   · exact supp_subset s
@@ -510,6 +509,12 @@ theorem Finset.supp_eq [Infinite 𝔸] {α : Type*} [Nominal 𝔸 α] (s : Finse
     rw [mem_biUnion] at ha
     obtain ⟨x, hx, ha⟩ := ha
     exact subset_supp s x hx ha
+
+@[simp]
+theorem Finset.names_supp_eq [Infinite 𝔸] (s : Finset 𝔸) :
+    supp 𝔸 s = s := by
+  ext a
+  simp only [Finset.supp_eq, mem_biUnion, Nominal.name_supp_eq, mem_singleton, exists_eq_right']
 
 theorem Finset.supports_iff [Infinite 𝔸] {α : Type*} [Nominal 𝔸 α] (s : Finset α) (t : Finset 𝔸) :
     Supports t s ↔ ∀ x ∈ s, Supports t x := by

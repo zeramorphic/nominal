@@ -532,7 +532,7 @@ def Equivariant.toFS {α β : Type*} [Nominal 𝔸 α] [MulPerm 𝔸 β]
   ⟨f x, (Nominal.supported x).map f hf⟩
 
 @[simp]
-theorem FS.supp_eq {α : Type*} [MulPerm 𝔸 α] (x : FS 𝔸 α) :
+protected theorem FS.supp_eq {α : Type*} [MulPerm 𝔸 α] (x : FS 𝔸 α) :
     supp 𝔸 x = supp 𝔸 x.val := by
   ext a
   simp only [Nominal.mem_supp_iff, supports_iff, mem_supp_iff' _ x.prop]
@@ -540,7 +540,7 @@ theorem FS.supp_eq {α : Type*} [MulPerm 𝔸 α] (x : FS 𝔸 α) :
 @[simp]
 theorem FS.fresh_iff {α β : Type*} [MulPerm 𝔸 α] [MulPerm 𝔸 β] (x : FS 𝔸 α) (y : β) :
     y #[𝔸] x ↔ y #[𝔸] x.val := by
-  rw [fresh_def, fresh_def, supp_eq]
+  rw [fresh_def, fresh_def, FS.supp_eq]
 
 /-!
 # Finite permutations
@@ -575,7 +575,7 @@ theorem Finperm.support_supports (π : Finperm 𝔸) :
     rw [ha', apply_inv_self]
     by_cases ha'' : a ∈ π.support
     · have := ha a ha''
-      rw [eq_comm, ← inv_eq_iff_eq] at this
+      rw [eq_comm, ← inv_apply_eq_iff_eq] at this
       rw [this] at ha'
       rw [ha']
     · rw [mem_support_iff, not_not] at ha''
@@ -593,10 +593,10 @@ theorem Finperm.support_subset_of_supports [Infinite 𝔸] {π : Finperm 𝔸} {
     rw [mem_support_iff, not_not] at hb
     have := congr_arg (· (π⁻¹ b)) this
     simp only [perm_def, swap_inv, coe_mul, Function.comp_apply, apply_inv_self] at this
-    rw [eq_comm, ← inv_eq_iff_eq] at hb
+    rw [eq_comm, ← inv_apply_eq_iff_eq] at hb
     rw [mem_support_iff] at ha
     rw [hb.1, swap_apply_right, swap_apply_of_ne_of_ne ha] at this
-    · rw [inv_eq_iff_eq] at hb
+    · rw [inv_apply_eq_iff_eq] at hb
       rwa [hb.1, EmbeddingLike.apply_eq_iff_eq] at this
     · rintro rfl
       rw [inv_apply_self] at hb
@@ -611,7 +611,7 @@ instance : Nominal 𝔸 (Finperm 𝔸) where
   supported π := ⟨π.support, π.support_supports⟩
 
 @[simp]
-theorem Finperm.supp_eq [Infinite 𝔸] (π : Finperm 𝔸) :
+protected theorem Finperm.supp_eq [Infinite 𝔸] (π : Finperm 𝔸) :
     supp 𝔸 π = π.support := by
   apply subset_antisymm
   · apply supp_minimal
@@ -622,7 +622,7 @@ theorem Finperm.supp_eq [Infinite 𝔸] (π : Finperm 𝔸) :
 @[simp]
 theorem Finperm.fresh_iff [Infinite 𝔸] (π : Finperm 𝔸) {α : Type*} [MulPerm 𝔸 α] (x : α) :
     π #[𝔸] x ↔ ∀ a ∈ supp 𝔸 x, π a = a := by
-  simp only [fresh_def, supp_eq, Finset.disjoint_iff_inter_eq_empty,
+  simp only [fresh_def, Finperm.supp_eq, Finset.disjoint_iff_inter_eq_empty,
     Finset.eq_empty_iff_forall_not_mem, Finset.mem_inter, mem_support_iff, ne_eq, not_and,
     not_imp_not]
 
