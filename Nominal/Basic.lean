@@ -280,7 +280,7 @@ theorem Finset.perm_def {α : Type*} [MulPerm 𝔸 α]
     π ⬝ s = s.map ⟨(π ⬝ ·), MulPerm.injective π⟩ :=
   rfl
 
-theorem Finset.mem_perm_iff {α : Type*} [MulPerm 𝔸 α]
+theorem Finset.mem_perm {α : Type*} [MulPerm 𝔸 α]
     (π : Finperm 𝔸) (x : α) (s : Finset α) :
     x ∈ π ⬝ s ↔ π⁻¹ ⬝ x ∈ s := by
   rw [Finset.perm_def]
@@ -289,16 +289,16 @@ theorem Finset.mem_perm_iff {α : Type*} [MulPerm 𝔸 α]
 instance {α : Type*} [MulPerm 𝔸 α] : MulPerm 𝔸 (Finset α) where
   one_perm _ := by
     ext
-    simp [Finset.mem_perm_iff]
+    simp [Finset.mem_perm]
   mul_perm _ _ _ := by
     ext
-    simp [Finset.mem_perm_iff, mul_perm]
+    simp [Finset.mem_perm, mul_perm]
 
 theorem Finset.perm_eq_of_perm_eq {α : Type*} [MulPerm 𝔸 α]
     (s : Finset α) (π : Finperm 𝔸) (h : ∀ a ∈ s, π ⬝ a = a) :
     π ⬝ s = s := by
   ext a
-  rw [Finset.mem_perm_iff]
+  rw [Finset.mem_perm]
   constructor
   · intro ha
     have := h _ ha
@@ -330,7 +330,7 @@ theorem Supports.perm {α : Sort*} [MulPerm 𝔸 α]
   · rwa [mul_perm, mul_perm, inv_perm_eq_iff] at this
   intro a ha
   rw [coe_mul, Function.comp_apply, coe_mul, Function.comp_apply, hπ' (π a), inv_apply_self]
-  rwa [Finset.mem_perm_iff, perm_name_eq, inv_apply_self]
+  rwa [Finset.mem_perm, perm_name_eq, inv_apply_self]
 
 theorem Supports.of_perm {α : Sort*} [MulPerm 𝔸 α]
     {s : Finset 𝔸} {x : α} {π : Finperm 𝔸}
@@ -355,16 +355,16 @@ theorem FinitelySupported.of_perm {α : Sort*} [MulPerm 𝔸 α] {x : α}
 theorem supp_perm_eq {α : Sort*} [MulPerm 𝔸 α] (x : α) (π : Finperm 𝔸) :
     supp 𝔸 (π ⬝ x) = π ⬝ (supp 𝔸 x) := by
   ext a
-  rw [Finset.mem_perm_iff]
+  rw [Finset.mem_perm]
   by_cases hx : FinitelySupported 𝔸 x
   · rw [mem_supp_iff' x hx, mem_supp_iff' (π ⬝ x) (hx.perm π)]
     constructor
     · intro h s hs
       have := h (π ⬝ s) (hs.perm π)
-      rwa [Finset.mem_perm_iff] at this
+      rwa [Finset.mem_perm] at this
     · intro h s hs
       have := h (π⁻¹ ⬝ s) hs.of_perm
-      rwa [Finset.mem_perm_iff, inv_inv, perm_inv_perm] at this
+      rwa [Finset.mem_perm, inv_inv, perm_inv_perm] at this
   · rw [supp_eq_of_not_finitelySupported x hx, supp_eq_of_not_finitelySupported]
     simp only [Finset.not_mem_empty]
     intro h
@@ -483,7 +483,7 @@ theorem Finset.subset_supp [Infinite 𝔸] {α : Type*} [Nominal 𝔸 α] (s : F
   rintro _ ⟨b, rfl⟩
   simp only [Set.mem_range, Set.iUnion_exists, Set.iUnion_iUnion_eq', Set.mem_iUnion, mem_coe]
   use b
-  rwa [Finset.mem_perm_iff, inv_perm_perm]
+  rwa [Finset.mem_perm, inv_perm_perm]
 
 theorem Finset.supp_subset [Infinite 𝔸] {α : Type*} [Nominal 𝔸 α] (s : Finset α) :
     supp 𝔸 s ⊆ s.biUnion (supp 𝔸) := by
@@ -497,7 +497,7 @@ theorem Finset.supp_subset [Infinite 𝔸] {α : Type*} [Nominal 𝔸 α] (s : F
   rintro _ ⟨b, rfl⟩
   simp only [mem_coe, Set.mem_preimage, Set.mem_powerset_iff]
   rintro x hx
-  rw [mem_coe, Finset.mem_perm_iff] at hx
+  rw [mem_coe, Finset.mem_perm] at hx
   simp only [Set.mem_iUnion, Set.mem_range]
   exact ⟨_, hx, b, by rw [perm_inv_perm]⟩
 

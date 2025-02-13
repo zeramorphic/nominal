@@ -31,20 +31,20 @@ instance : MulPerm 𝔸 (Abstract' 𝔸 α β) where
     rfl
 
 def Rel (x y : Abstract' 𝔸 α β) : Prop :=
-  ∃ π : Finperm 𝔸, π ⬝ x = y ∧ π #[𝔸] (supp 𝔸 x.2 \ supp 𝔸 x.1)
+  ∃ π : Finperm 𝔸, π ⬝ x = y ∧ π #[𝔸] supp 𝔸 x.val \ supp 𝔸 x.param
 
 omit [Infinite 𝔸] in
 theorem perm_supp_diff_eq (π : Finperm 𝔸) (x : Abstract' 𝔸 α β) :
-    π ⬝ (supp 𝔸 x.2 \ supp 𝔸 x.1) = supp 𝔸 (π ⬝ x).2 \ supp 𝔸 (π ⬝ x).1 := by
+    π ⬝ (supp 𝔸 x.val \ supp 𝔸 x.param) = supp 𝔸 (π ⬝ x).val \ supp 𝔸 (π ⬝ x).param := by
   ext a
   rw [Finset.perm_def]
-  simp only [perm_def, supp_perm_eq, Finset.mem_sdiff, Finset.mem_perm_iff, perm_name_eq,
+  simp only [perm_def, supp_perm_eq, Finset.mem_sdiff, Finset.mem_perm, perm_name_eq,
     Finset.mem_map, Function.Embedding.coeFn_mk]
   aesop
 
 theorem perm_supp_diff_eq' {π : Finperm 𝔸} {x : Abstract' 𝔸 α β}
-    (h : π #[𝔸] (supp 𝔸 x.2 \ supp 𝔸 x.1)) :
-    supp 𝔸 (π ⬝ x).2 \ supp 𝔸 (π ⬝ x).1 = supp 𝔸 x.2 \ supp 𝔸 x.1 := by
+    (h : π #[𝔸] (supp 𝔸 x.val \ supp 𝔸 x.param)) :
+    supp 𝔸 (π ⬝ x).val \ supp 𝔸 (π ⬝ x).param = supp 𝔸 x.val \ supp 𝔸 x.param := by
   rw [← perm_supp_diff_eq, perm_eq_of_fresh h]
 
 theorem rel_refl (x : Abstract' 𝔸 α β) :
@@ -56,7 +56,8 @@ theorem rel_symm {x y : Abstract' 𝔸 α β} (h : Rel x y) :
     Rel y x := by
   obtain ⟨π, rfl, hπ⟩ := h
   refine ⟨π⁻¹, inv_perm_perm π x, ?_⟩
-  rwa [perm_supp_diff_eq' hπ, fresh_def, Finperm.supp_eq, inv_support, ← Finperm.supp_eq, ← fresh_def]
+  rwa [perm_supp_diff_eq' hπ, fresh_def, Finperm.supp_eq, inv_support,
+    ← Finperm.supp_eq, ← fresh_def]
 
 theorem rel_trans {x y z : Abstract' 𝔸 α β} (h₁ : Rel x y) (h₂ : Rel y z) :
     Rel x z := by
@@ -89,6 +90,71 @@ instance setoid : Setoid (Abstract' 𝔸 α β) where
   iseqv := rel_equivalence
 
 end Abstract'
+
+theorem Abstract'.rel_iff_aux [Nominal 𝔸 α] [Nominal 𝔸 β]
+    {x y : Abstract' 𝔸 α β} (π : Finperm 𝔸)
+    (hπ₁ : π ⬝ x = y) (hπ₂ : π #[𝔸] supp 𝔸 x.val \ supp 𝔸 x.param) :
+    ∃ π : Finperm 𝔸, π ⬝ x = y ∧
+      π #[𝔸] supp 𝔸 x.val \ supp 𝔸 x.param ∧
+      π.support ⊆ supp 𝔸 x.param ∪ supp 𝔸 y.param := by
+  cases hπ₁
+  have hπ : (supp 𝔸 x.param).image π = supp 𝔸 (π ⬝ x).param := by
+    ext a
+    simp only [Finset.mem_image, perm_def, supp_perm_eq, Finset.mem_perm, perm_name_eq]
+    aesop
+  obtain ⟨π', hπ'₁, hπ'₂⟩ := exists_extension
+    (π.toPerm (supp 𝔸 x.param) (supp 𝔸 (π ⬝ x).param) hπ)
+  refine ⟨π', ?_, ?_, hπ'₂⟩
+  · have := Nominal.supp_supports 𝔸 (x.param, x.val) (π'⁻¹ * π) ?_
+    · simp only [mul_perm, Prod.perm_mk, Prod.mk.injEq, inv_perm_eq_iff] at this
+      cases x
+      rw [perm_def, perm_def, mk.injEq, this.1, this.2]
+      exact ⟨rfl, rfl⟩
+    intro a ha
+    simp only [coe_mul, Function.comp_apply, inv_apply_eq_iff_eq]
+    simp only [Prod.supp_mk, Finset.mem_union] at ha
+    by_cases ha' : a ∈ supp 𝔸 x.param
+    · have := hπ'₁ a ha'
+      simp only [toPerm_apply] at this
+      rw [this]
+    · simp only [ha', false_or] at ha
+      simp only [fresh_iff, Finset.names_supp_eq, Finset.mem_sdiff, and_imp] at hπ₂
+      rw [hπ₂ a ha ha', eq_comm]
+      by_contra ha''
+      rw [← ne_eq, ← Finperm.mem_support_iff] at ha''
+      have := hπ'₂ ha''
+      simp only [perm_def, supp_perm_eq, Finset.mem_union, ha', Finset.mem_perm, perm_name_eq,
+        false_or] at this
+      rw [← hπ₂ a ha ha', inv_apply_self] at this
+      contradiction
+  · simp only [fresh_iff, Finset.names_supp_eq, Finset.mem_sdiff, and_imp]
+    intro a ha₁ ha₂
+    by_contra ha₃
+    rw [← ne_eq, ← Finperm.mem_support_iff] at ha₃
+    have := hπ'₂ ha₃
+    simp only [Finset.mem_union, ha₂, false_or] at this
+    have h := hπ'₁ (π⁻¹ a) ?_
+    · simp only [toPerm_apply, apply_inv_self] at h
+      simp only [fresh_iff, Finset.names_supp_eq, Finset.mem_sdiff, and_imp] at hπ₂
+      have := hπ₂ a
+      simp only [ha₁, ha₂, not_false_eq_true, forall_const] at this
+      rw [eq_comm, ← inv_apply_eq_iff_eq] at this
+      rw [this] at h
+      rw [mem_support_iff] at ha₃
+      contradiction
+    · simp only [perm_def, supp_perm_eq, Finset.mem_perm, perm_name_eq] at this
+      exact this
+
+/-- A more powerful, but equivalent, definition of the relation. -/
+theorem Abstract'.rel_iff [Nominal 𝔸 α] [Nominal 𝔸 β] (x y : Abstract' 𝔸 α β) :
+    Rel x y ↔ ∃ π : Finperm 𝔸, π ⬝ x = y ∧
+      π #[𝔸] supp 𝔸 x.val \ supp 𝔸 x.param ∧
+      π.support ⊆ supp 𝔸 x.param ∪ supp 𝔸 y.param := by
+  constructor
+  · rintro ⟨π, hπ₁, hπ₂⟩
+    exact rel_iff_aux π hπ₁ hπ₂
+  · rintro ⟨π, rfl, hπ⟩
+    exact ⟨π, rfl, hπ.1⟩
 
 def Abstract (𝔸 α β : Type*) [DecidableEq 𝔸] [Infinite 𝔸] [MulPerm 𝔸 α] [MulPerm 𝔸 β] :=
   Quotient (Abstract'.setoid (𝔸 := 𝔸) (α := α) (β := β))
@@ -127,6 +193,10 @@ theorem exact {x₁ x₂ : α} {y₁ y₂ : β} (h : (⟨x₁⟩y₁ : [α|𝔸]
 theorem mk_eq_iff {x₁ x₂ : α} {y₁ y₂ : β} :
     (⟨x₁⟩y₁ : [α|𝔸]β) = ⟨x₂⟩y₂ ↔ Rel (𝔸 := 𝔸) ⟨x₁, y₁⟩ ⟨x₂, y₂⟩ :=
   ⟨exact, sound⟩
+
+/-!
+# Nominal structure
+-/
 
 theorem perm_aux (π : Finperm 𝔸) (x₁ x₂ : α) (y₁ y₂ : β) (h : Rel (𝔸 := 𝔸) ⟨x₁, y₁⟩ ⟨x₂, y₂⟩) :
     (⟨π ⬝ x₁⟩(π ⬝ y₁) : [α|𝔸]β) = ⟨π ⬝ x₂⟩(π ⬝ y₂) := by
@@ -178,14 +248,14 @@ theorem subset_of_supports [Nominal 𝔸 α] [Nominal 𝔸 β] {x : α} {y : β}
     simp only [Abstract'.perm_def, Abstract'.mk.injEq] at hπ₁
     simp only [supp_perm_eq, fresh_iff, Finset.names_supp_eq, Finset.mem_sdiff, and_imp] at hπ₂
     have := congr_arg (a ∈ supp 𝔸 ·) hπ₁.2
-    simp only [supp_perm_eq, Finset.mem_perm_iff, perm_name_eq, swap_inv, ha.1, eq_iff_iff,
+    simp only [supp_perm_eq, Finset.mem_perm, perm_name_eq, swap_inv, ha.1, eq_iff_iff,
       iff_true] at this
     have ha'' := hπ₂ (π⁻¹ a) ?_ ?_
     · simp only [apply_inv_self] at ha''
       rw [← ha'', swap_apply_left] at this
       contradiction
-    · rwa [Finset.mem_perm_iff, swap_inv, perm_name_eq]
-    · rw [← perm_name_eq, ← Finset.mem_perm_iff, ← supp_perm_eq, ← supp_perm_eq, hπ₁.1]
+    · rwa [Finset.mem_perm, swap_inv, perm_name_eq]
+    · rw [← perm_name_eq, ← Finset.mem_perm, ← supp_perm_eq, ← supp_perm_eq, hπ₁.1]
       exact ha.2
   · intro c hc
     rw [swap_apply_of_ne_of_ne] <;>
@@ -219,20 +289,58 @@ theorem fresh_induction [MulPerm 𝔸 α] [MulPerm 𝔸 β] [MulPerm 𝔸 γ] {m
     aesop
   · rw [fresh_def, supp_perm_eq, Finset.disjoint_iff_ne]
     rintro a ha₁ _ ha₂ rfl
-    rw [Finset.mem_perm_iff, perm_name_eq] at ha₁
+    rw [Finset.mem_perm, perm_name_eq] at ha₁
     have := hπ₁ (π⁻¹ a) ha₁
     aesop
 
-theorem exists_map [MulPerm 𝔸 α] [MulPerm 𝔸 β] [MulPerm 𝔸 γ]
+/-!
+# Functoriality
+-/
+
+theorem exists_map [Nominal 𝔸 α] [Nominal 𝔸 β] [Nominal 𝔸 γ]
     (f : β → γ) (hf : FinitelySupported 𝔸 f) (x : [α|𝔸]β) :
     ∃ y : [α|𝔸]γ, ∀ a b, a #[𝔸] f → x = ⟨a⟩b → y = ⟨a⟩(f b) := by
-  sorry
+  induction x using fresh_induction f
+  infer_instance
+  case h x y hxy =>
+  use ⟨x⟩(f y)
+  intro x' y' hxy' h
+  rw [mk_eq_iff] at h ⊢
+  rw [Abstract'.rel_iff] at h
+  obtain ⟨π, hπ₁, hπ₂, hπ₃⟩ := h
+  cases hπ₁
+  dsimp only at *
+  have hfy := congr_fun (supp_supports' f hf π ?_) (π ⬝ y)
+  swap
+  · intro a ha
+    by_contra ha'
+    rw [← ne_eq, ← mem_support_iff] at ha'
+    have := hπ₃ ha'
+    simp only [fresh_def, supp_perm_eq, Finset.disjoint_iff_ne] at hxy hxy'
+    aesop
+  simp only [Function.perm_def, inv_perm_perm] at hfy
+  refine ⟨π, ?_, ?_⟩
+  · rw [Abstract'.perm_def, Abstract'.mk.injEq]
+    simp only [hfy, and_self]
+  · simp only [fresh_iff, Finset.names_supp_eq, Finset.mem_sdiff, and_imp]
+    intro a ha ha'
+    by_contra ha''
+    simp only [fresh_iff, Finset.names_supp_eq, Finset.mem_sdiff, and_imp] at hπ₂
+    have hay := hπ₂ a
+    simp only [ha', not_false_eq_true, ha'', imp_false, not_true_eq_false] at hay
+    rw [← ne_eq, ← mem_support_iff] at ha''
+    have hax := hπ₃ ha''
+    simp only [Finset.mem_union, ha', false_or] at hax
+    rw [fresh_def, Finset.disjoint_iff_ne] at hxy'
+    have := supp_apply_subset' f hf y ha
+    simp only [Finset.mem_union] at this
+    tauto
 
-noncomputable def map [MulPerm 𝔸 α] [MulPerm 𝔸 β] [MulPerm 𝔸 γ]
+noncomputable def map [Nominal 𝔸 α] [Nominal 𝔸 β] [Nominal 𝔸 γ]
     (f : β → γ) (hf : FinitelySupported 𝔸 f) (x : [α|𝔸]β) : [α|𝔸]γ :=
   (exists_map f hf x).choose
 
-theorem map_mk [MulPerm 𝔸 α] [MulPerm 𝔸 β] [MulPerm 𝔸 γ]
+theorem map_mk [Nominal 𝔸 α] [Nominal 𝔸 β] [Nominal 𝔸 γ]
     {f : β → γ} {hf : FinitelySupported 𝔸 f} {a : α} {b : β} (hab : a #[𝔸] f) :
     map f hf (⟨a⟩b) = ⟨a⟩(f b) :=
   (exists_map f hf (⟨a⟩b)).choose_spec a b hab rfl

@@ -329,6 +329,140 @@ theorem swap_mul [DecidableEq α] (π : Finperm α) (a b : α) :
     swap a b * π = π * swap (π⁻¹ a) (π⁻¹ b) := by
   rw [mul_swap, apply_inv_self, apply_inv_self]
 
+def toPerm [DecidableEq α] (π : Finperm α) (s t : Finset α)
+    (h : s.image π = t) :
+    s ≃ t where
+  toFun x := ⟨π x, h ▸ Finset.mem_image_of_mem π x.prop⟩
+  invFun x := ⟨π⁻¹ x, by
+    obtain ⟨y, hy⟩ := Finset.mem_image.mp (by simpa only [← h] using x.prop)
+    rw [eq_comm, ← inv_apply_eq_iff_eq] at hy
+    exact hy.2 ▸ hy.1⟩
+  left_inv a := Subtype.val_injective (inv_apply_self π a)
+  right_inv a := Subtype.val_injective (apply_inv_self π a)
+
+@[simp]
+theorem toPerm_apply [DecidableEq α] {π : Finperm α} {s t : Finset α}
+    (h : s.image π = t) (a : s) :
+    π.toPerm s t h a = π a :=
+  rfl
+
+/-!
+# The homogeneity lemma
+
+This is lemma 1.14 in the Nominal Sets book.
+-/
+
+noncomputable def diffEquiv [DecidableEq α] {s t : Finset α} (h : s.card = t.card) :
+    (s \ t : Finset α) ≃ (t \ s : Finset α) :=
+  Finset.equivOfCardEq (Finset.card_sdiff_comm h)
+
+noncomputable def extendMap [DecidableEq α] {s t : Finset α} (π : s ≃ t) (a : α) : α :=
+  if ha : a ∈ s then
+    π ⟨a, ha⟩
+  else if ha' : a ∈ t then
+    diffEquiv (Finset.card_eq_of_equiv π.symm) ⟨a, Finset.mem_sdiff.mpr ⟨ha', ha⟩⟩
+  else
+    a
+
+theorem extendMap_mem_iff₁ [DecidableEq α] {s t : Finset α} (π : s ≃ t) (a : α) :
+    extendMap π a ∈ t ↔ a ∈ s := by
+  unfold extendMap
+  split_ifs with h₁ h₂
+  · simp only [Finset.coe_mem, h₁]
+  · have := (diffEquiv (Finset.card_eq_of_equiv π.symm)
+      ⟨a, Finset.mem_sdiff.mpr ⟨h₂, h₁⟩⟩).prop
+    rw [Finset.mem_sdiff] at this
+    simp only [this.2, h₁]
+  · simp only [h₂, h₁]
+
+theorem extendMap_mem_iff₂ [DecidableEq α] {s t : Finset α} (π : s ≃ t) (a : α) :
+    extendMap π a ∈ s ∧ extendMap π a ∉ t ↔ a ∈ t ∧ a ∉ s := by
+  unfold extendMap
+  split_ifs with h₁ h₂
+  · simp only [Finset.mem_sdiff, Finset.coe_mem, not_true_eq_false, and_false, h₁]
+  · have := (diffEquiv (Finset.card_eq_of_equiv π.symm)
+      ⟨a, Finset.mem_sdiff.mpr ⟨h₂, h₁⟩⟩).prop
+    rw [Finset.mem_sdiff] at this
+    simp only [this, not_false_eq_true, and_self, h₂, h₁]
+  · simp only [h₂, h₁, Finset.mem_sdiff]
+
+theorem extendMap_mem_iff₃ [DecidableEq α] {s t : Finset α} (π : s ≃ t) (a : α) :
+    extendMap π a ∉ s ∧ extendMap π a ∉ t ↔ a ∉ s ∧ a ∉ t := by
+  unfold extendMap
+  split_ifs with h₁ h₂
+  · simp only [Finset.coe_mem, not_true_eq_false, and_false, h₁, false_and]
+  · have := (diffEquiv (Finset.card_eq_of_equiv π.symm)
+      ⟨a, Finset.mem_sdiff.mpr ⟨h₂, h₁⟩⟩).prop
+    rw [Finset.mem_sdiff] at this
+    simp only [this, not_true_eq_false, not_false_eq_true, and_true, h₁, h₂, and_false]
+  · simp only [h₂, h₁, Finset.mem_sdiff]
+
+theorem extendMap_bijective [DecidableEq α] {s t : Finset α} (π : s ≃ t) :
+    Function.Bijective (extendMap π) := by
+  constructor
+  · intro a₁ a₂ h
+    by_cases hsa₁ : a₁ ∈ s
+    · have hsa₂ := (extendMap_mem_iff₁ π a₁).mpr hsa₁
+      rw [h, extendMap_mem_iff₁ π a₂] at hsa₂
+      unfold extendMap at h
+      simp only [hsa₁, ↓reduceDIte, hsa₂, Subtype.val_inj, EmbeddingLike.apply_eq_iff_eq,
+        Subtype.mk.injEq] at h
+      exact h
+    by_cases hta₁ : a₁ ∈ t
+    · have ha₂ := (extendMap_mem_iff₂ π a₁).mpr ⟨hta₁, hsa₁⟩
+      rw [h, extendMap_mem_iff₂ π a₂] at ha₂
+      unfold extendMap at h
+      simp only [hsa₁, ↓reduceDIte, hta₁, ha₂, Subtype.val_inj, EmbeddingLike.apply_eq_iff_eq,
+        Subtype.mk.injEq] at h
+      exact h
+    · have ha₂ := (extendMap_mem_iff₃ π a₁).mpr ⟨hsa₁, hta₁⟩
+      rw [h, extendMap_mem_iff₃ π a₂] at ha₂
+      unfold extendMap at h
+      simp only [hsa₁, ↓reduceDIte, hta₁, ha₂] at h
+      exact h
+  · intro a
+    by_cases hat : a ∈ t
+    · use π.symm ⟨a, hat⟩
+      rw [extendMap, dif_pos (Finset.coe_mem (π.symm ⟨a, hat⟩)), apply_symm_apply]
+    by_cases has : a ∈ s
+    · have := ((diffEquiv (Finset.card_eq_of_equiv π.symm)).symm
+        ⟨a, Finset.mem_sdiff.mpr ⟨has, hat⟩⟩).prop
+      rw [Finset.mem_sdiff] at this
+      use (diffEquiv (Finset.card_eq_of_equiv π.symm)).symm ⟨a, Finset.mem_sdiff.mpr ⟨has, hat⟩⟩
+      rw [extendMap, dif_neg this.2, dif_pos this.1, apply_symm_apply]
+    · use a
+      rw [extendMap, dif_neg has, dif_neg hat]
+
+noncomputable def extendPerm [DecidableEq α] {s t : Finset α} (π : s ≃ t) : Perm α :=
+  Equiv.ofBijective (extendMap π) (extendMap_bijective π)
+
+theorem extendPerm_not_mem [DecidableEq α] {s t : Finset α} (π : s ≃ t)
+    (a : α) (ha : extendPerm π a ≠ a) : a ∈ s ∪ t := by
+  contrapose! ha
+  simp only [Finset.mem_union, not_or] at ha
+  simp only [extendPerm, ofBijective_apply, extendMap, ha, ↓reduceDIte]
+
+noncomputable def extendFinperm [DecidableEq α] {s t : Finset α} (π : s ≃ t) : Finperm α :=
+  ofSubset (extendPerm π) (s ∪ t) (extendPerm_not_mem π)
+
+/-- The homogeneity lemma: there is a `Finperm α` extending any given permutation
+of finite sets `s ≃ t`, acting as the identity outside `s ∪ t`. -/
+theorem exists_extension [DecidableEq α] {s t : Finset α} (π : s ≃ t) :
+    ∃ π' : Finperm α, (∀ (a : α) (ha : a ∈ s), π' a = π ⟨a, ha⟩) ∧
+      (π'.support ⊆ s ∪ t) := by
+  refine ⟨extendFinperm π, ?_, ?_⟩
+  · intro a ha
+    simp only [extendFinperm, ofSubset, extendPerm, ofBijective_apply, extendMap, ne_eq,
+      mk_apply, ha, ↓reduceDIte]
+  · intro a ha
+    by_contra h
+    simp only [Finset.mem_union, not_or] at h
+    simp only [extendFinperm, ofSubset, extendPerm, ofBijective_apply, extendMap, ne_eq,
+      Finset.mem_filter, Finset.mem_union, h, or_self, ↓reduceDIte, not_true_eq_false,
+      and_self] at ha
+
+/-- Another useful statement of the homogeneity lemma: for any two finite sets `s, t`,
+there is a finite permutation that maps `s` outside `t`, and is the identity on `t \ s`. -/
 theorem exists_fresh [DecidableEq α] [Infinite α] (s t : Finset α) :
     ∃ π : Finperm α, (∀ a ∈ s, π a ∉ t) ∧ (∀ a ∈ t \ s, π a = a) := by
   induction s using Finset.cons_induction_on

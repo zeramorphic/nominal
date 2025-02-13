@@ -9,7 +9,7 @@ theorem supp_equivariant [Infinite 𝔸] {α : Type*} [MulPerm 𝔸 α] :
   rw [Function.equivariant_iff]
   intro π x
   ext a
-  rw [Finset.mem_perm_iff]
+  rw [Finset.mem_perm]
   by_cases hx : FinitelySupported 𝔸 x
   · rw [mem_supp_iff' x hx, mem_supp_iff' (π ⬝ x) (hx.perm π)]
     constructor
@@ -19,7 +19,7 @@ theorem supp_equivariant [Infinite 𝔸] {α : Type*} [MulPerm 𝔸 α] :
       rwa [inv_perm_perm] at this
     · intro h s hs
       have := h (π ⬝ s) (hs.perm π)
-      rwa [Finset.mem_perm_iff] at this
+      rwa [Finset.mem_perm] at this
   · rw [supp_eq_of_not_finitelySupported x hx, supp_eq_of_not_finitelySupported]
     · simp only [Finperm.perm_name_eq, Finset.not_mem_empty]
     · contrapose! hx
@@ -64,6 +64,25 @@ theorem supp_apply_subset {α β : Type*} [Nominal 𝔸 α] [Nominal 𝔸 β]
   rw [Nominal.mem_supp_iff] at ha ⊢
   intro s hs
   exact ha s (hs.map f hf)
+
+theorem Supports.supports_apply {α β : Type*} [Nominal 𝔸 α] [Nominal 𝔸 β]
+    {f : α → β} {s t : Finset 𝔸} (hf : Supports s f) {x : α} (hx : Supports t x) :
+    Supports (s ∪ t) (f x) := by
+  intro π hπ
+  simp only [Finset.mem_union] at hπ
+  have := hf π (λ a ha ↦ hπ a (Or.inl ha))
+  simp only [funext_iff, Function.perm_def] at this
+  have := this (π ⬝ x)
+  rw [inv_perm_perm] at this
+  rw [this, hx π (λ a ha ↦ hπ a (Or.inr ha))]
+
+theorem supp_apply_subset' [Infinite 𝔸] {α β : Type*} [Nominal 𝔸 α] [Nominal 𝔸 β]
+    (f : α → β) (hf : FinitelySupported 𝔸 f) (x : α) :
+    supp 𝔸 (f x) ⊆ supp 𝔸 f ∪ supp 𝔸 x := by
+  rw [Nominal.supp_subset_iff]
+  apply Supports.supports_apply
+  exact supp_supports' f hf
+  exact Nominal.supp_supports 𝔸 x
 
 theorem supp_apply_eq_of_injective {α β : Type*} [Nominal 𝔸 α] [Nominal 𝔸 β]
     (f : α → β) (hf : Function.Injective f) (hf' : Equivariant 𝔸 f) (x : α) :
