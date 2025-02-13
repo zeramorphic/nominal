@@ -15,6 +15,14 @@ theorem fresh_def [MulPerm 𝔸 α] [MulPerm 𝔸 β] (x : α) (y : β) :
     x #[𝔸] y ↔ Disjoint (supp 𝔸 x) (supp 𝔸 y) :=
   Iff.rfl
 
+theorem fresh_comm [MulPerm 𝔸 α] [MulPerm 𝔸 β] (x : α) (y : β) :
+    x #[𝔸] y ↔ y #[𝔸] x := by
+  rw [fresh_def, fresh_def, disjoint_comm]
+
+theorem Fresh.comm [MulPerm 𝔸 α] [MulPerm 𝔸 β] {x : α} {y : β} (h : x #[𝔸] y) :
+    y #[𝔸] x :=
+  (fresh_comm x y).mp h
+
 theorem name_fresh_iff [Infinite 𝔸] [MulPerm 𝔸 α] (a : 𝔸) (x : α) :
     a #[𝔸] x ↔ a ∉ supp 𝔸 x := by
   rw [fresh_def, Nominal.name_supp_eq, Finset.disjoint_singleton_left]
@@ -73,14 +81,14 @@ theorem fresh_iff_exists_swap_perm_eq [Infinite 𝔸] [Nominal 𝔸 α] (a : �
     rw [name_fresh_iff] at hb₁ ⊢
     exact hb₁ ∘ this.mp
 
-theorem Fresh.perm [Nominal 𝔸 α] [Nominal 𝔸 β] {x : α} {y : β} (h : x #[𝔸] y) (π : Finperm 𝔸) :
+theorem Fresh.perm [MulPerm 𝔸 α] [MulPerm 𝔸 β] {x : α} {y : β} (h : x #[𝔸] y) (π : Finperm 𝔸) :
     (π ⬝ x) #[𝔸] (π ⬝ y) := by
   simp only [fresh_def, Finset.disjoint_iff_inter_eq_empty, Finset.eq_empty_iff_forall_not_mem,
     Finset.mem_inter, not_and, supp_perm_eq, Finset.mem_perm, perm_name_eq] at h ⊢
   intro a ha₁ ha₂
   exact h _ ha₁ ha₂
 
-theorem fresh_perm_iff [Nominal 𝔸 α] [Nominal 𝔸 β] (x : α) (y : β) (π : Finperm 𝔸) :
+theorem fresh_perm_iff [MulPerm 𝔸 α] [MulPerm 𝔸 β] (x : α) (y : β) (π : Finperm 𝔸) :
     (π ⬝ x) #[𝔸] (π ⬝ y) ↔ x #[𝔸] y := by
   constructor
   · intro h

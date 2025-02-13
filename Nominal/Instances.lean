@@ -32,6 +32,14 @@ theorem IsDiscrete.perm_eq {α : Sort*} [HasPerm 𝔸 α] [IsDiscrete 𝔸 α] :
     ∀ π : Finperm 𝔸, ∀ x : α, π ⬝ x = x :=
   IsDiscrete.perm_eq'
 
+@[simp]
+theorem IsDiscrete.supp_eq {α : Sort*} [MulPerm 𝔸 α] [IsDiscrete 𝔸 α] (x : α) :
+    supp 𝔸 x = ∅ := by
+  rw [← Finset.subset_empty]
+  apply supp_minimal
+  intro _ _
+  rw [perm_eq]
+
 instance {α : Sort*} : IsDiscrete 𝔸 (Discrete 𝔸 α) where
   perm_eq' _ _ := rfl
 

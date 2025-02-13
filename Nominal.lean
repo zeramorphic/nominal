@@ -6,3 +6,4 @@ import Nominal.Fresh
 import Nominal.Instances
 import Nominal.Quantifier
 import Nominal.Rel
+import Nominal.SepProd
