@@ -116,6 +116,9 @@ theorem equivariant_of_implies₂ {α β : Sort*} [MulPerm 𝔸 α] [MulPerm �
   · have := h π⁻¹ (π ⬝ x) y
     rwa [inv_perm_perm] at this
 
+def id_equivariant {α : Sort*} [MulPerm 𝔸 α] : Equivariant 𝔸 (id : α → α) :=
+  (Function.equivariant_iff id).mpr (λ _ _ ↦ rfl)
+
 theorem Equivariant.comp {α β γ : Sort*} [MulPerm 𝔸 α] [MulPerm 𝔸 β] [MulPerm 𝔸 γ]
     {f : β → γ} {g : α → β}
     (hf : Equivariant 𝔸 f) (hg : Equivariant 𝔸 g) :

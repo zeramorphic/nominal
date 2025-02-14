@@ -54,6 +54,7 @@ instance [Infinite 𝔸] [Nominal 𝔸 α] [Nominal 𝔸 β] : Nominal 𝔸 (α 
     · exact Nominal.supp_supports 𝔸 x.fst π (λ a ha ↦ hπ a (Or.inl ha))
     · exact Nominal.supp_supports 𝔸 x.snd π (λ a ha ↦ hπ a (Or.inr ha))
 
+@[simp]
 theorem supp_eq [Infinite 𝔸] [Nominal 𝔸 α] [Nominal 𝔸 β] (x : α ∗[𝔸] β) :
     supp 𝔸 x = supp 𝔸 x.fst ∪ supp 𝔸 x.snd := by
   rw [← supp_apply_eq_of_injective toProd toProd_injective toProd_equivariant,
@@ -61,7 +62,7 @@ theorem supp_eq [Infinite 𝔸] [Nominal 𝔸 α] [Nominal 𝔸 β] (x : α ∗[
   rfl
 
 /-!
-# Functoriality
+# (Bi)functoriality
 -/
 
 def map [Nominal 𝔸 α] [Nominal 𝔸 β] [Nominal 𝔸 γ] [Nominal 𝔸 δ]
@@ -73,16 +74,50 @@ def map [Nominal 𝔸 α] [Nominal 𝔸 β] [Nominal 𝔸 γ] [Nominal 𝔸 δ]
     intro a ha b hb
     exact this a (supp_apply_subset f hf x.fst ha) b (supp_apply_subset g hg x.snd hb)⟩
 
+@[simp]
 theorem map_fst [Nominal 𝔸 α] [Nominal 𝔸 β] [Nominal 𝔸 γ] [Nominal 𝔸 δ]
     {f : α → γ} {g : β → δ} {hf : Equivariant 𝔸 f} {hg : Equivariant 𝔸 g}
     (x : α ∗[𝔸] β) :
     (map f g hf hg x).fst = f x.fst :=
   rfl
 
+@[simp]
 theorem map_snd [Nominal 𝔸 α] [Nominal 𝔸 β] [Nominal 𝔸 γ] [Nominal 𝔸 δ]
     {f : α → γ} {g : β → δ} {hf : Equivariant 𝔸 f} {hg : Equivariant 𝔸 g}
     (x : α ∗[𝔸] β) :
     (map f g hf hg x).snd = g x.snd :=
+  rfl
+
+def first [Nominal 𝔸 α] [Nominal 𝔸 β] [Nominal 𝔸 γ]
+    (f : α → γ) (hf : Equivariant 𝔸 f) : α ∗[𝔸] β → γ ∗[𝔸] β :=
+  map f id hf id_equivariant
+
+@[simp]
+theorem first_fst [Nominal 𝔸 α] [Nominal 𝔸 β] [Nominal 𝔸 γ]
+    {f : α → γ} {hf : Equivariant 𝔸 f} (x : α ∗[𝔸] β) :
+    (first f hf x).fst = f x.fst :=
+  rfl
+
+@[simp]
+theorem first_snd [Nominal 𝔸 α] [Nominal 𝔸 β] [Nominal 𝔸 γ]
+    {f : α → γ} {hf : Equivariant 𝔸 f} (x : α ∗[𝔸] β) :
+    (first f hf x).snd = x.snd :=
+  rfl
+
+def second [Nominal 𝔸 α] [Nominal 𝔸 β] [Nominal 𝔸 γ]
+    (f : β → γ) (hf : Equivariant 𝔸 f) : α ∗[𝔸] β → α ∗[𝔸] γ :=
+  map id f id_equivariant hf
+
+@[simp]
+theorem second_fst [Nominal 𝔸 α] [Nominal 𝔸 β] [Nominal 𝔸 γ]
+    {f : β → γ} {hf : Equivariant 𝔸 f} (x : α ∗[𝔸] β) :
+    (second f hf x).fst = x.fst :=
+  rfl
+
+@[simp]
+theorem second_snd [Nominal 𝔸 α] [Nominal 𝔸 β] [Nominal 𝔸 γ]
+    {f : β → γ} {hf : Equivariant 𝔸 f} (x : α ∗[𝔸] β) :
+    (second f hf x).snd = f x.snd :=
   rfl
 
 /-!
@@ -106,6 +141,13 @@ theorem symm_fst [MulPerm 𝔸 α] [MulPerm 𝔸 β] (x : α ∗[𝔸] β) :
 theorem symm_snd [MulPerm 𝔸 α] [MulPerm 𝔸 β] (x : α ∗[𝔸] β) :
     (symm α β x).snd = x.fst :=
   rfl
+
+theorem symm_equivariant [MulPerm 𝔸 α] [MulPerm 𝔸 β] :
+    Equivariant 𝔸 (symm α β : α ∗[𝔸] β → β ∗[𝔸] α) := by
+  intro π
+  ext x
+  · simp only [Function.perm_def, perm_fst, symm_fst, perm_snd, perm_inv_perm]
+  · simp only [Function.perm_def, perm_snd, symm_snd, perm_fst, perm_inv_perm]
 
 def leftDiscrete (α β : Type*) [MulPerm 𝔸 α] [MulPerm 𝔸 β] [IsDiscrete 𝔸 α] :
     α ∗[𝔸] β ≃ α × β where
@@ -161,5 +203,29 @@ theorem rightUnitor_apply_eq [MulPerm 𝔸 α] (x : α ∗[𝔸] Unit) :
 theorem rightUnitor_symm_apply_snd_eq [MulPerm 𝔸 α] (x : α) :
     ((rightUnitor α : α ∗[𝔸] Unit ≃ α).symm x).fst = x :=
   rfl
+
+def assoc' [Infinite 𝔸] [Nominal 𝔸 α] [Nominal 𝔸 β] [Nominal 𝔸 γ]
+    (x : (α ∗[𝔸] β) ∗[𝔸] γ) : α ∗[𝔸] β ∗[𝔸] γ where
+  fst := x.fst.fst
+  snd := ⟨x.fst.snd, x.snd, by
+    have := x.sep
+    rw [fresh_def] at this ⊢
+    simp only [supp_eq, Finset.disjoint_union_left] at this
+    aesop⟩
+  sep := by
+    have := x.sep
+    rw [fresh_def] at this ⊢
+    rw [supp_eq, Finset.disjoint_union_left] at this
+    rw [supp_eq, Finset.disjoint_union_right]
+    exact ⟨x.fst.sep, this.1⟩
+
+/-- The monoidal associator. -/
+def assoc [Infinite 𝔸] (α β γ : Type*) [Nominal 𝔸 α] [Nominal 𝔸 β] [Nominal 𝔸 γ] :
+    (α ∗[𝔸] β) ∗[𝔸] γ ≃ α ∗[𝔸] β ∗[𝔸] γ where
+  toFun := assoc'
+  invFun := first (symm β α) symm_equivariant ∘ symm γ (β ∗[𝔸] α) ∘
+    assoc' ∘ first (symm β γ) symm_equivariant ∘ symm α (β ∗[𝔸] γ)
+  left_inv _ := rfl
+  right_inv _ := rfl
 
 end SepProd

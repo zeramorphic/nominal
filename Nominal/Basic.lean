@@ -529,7 +529,7 @@ instance : MulPerm 𝔸 Prop where
   one_perm _ := rfl
   mul_perm _ _ _ := rfl
 
-instance (p : Prop) : Equivariant 𝔸 p :=
+def Prop.equivariant (p : Prop) : Equivariant 𝔸 p :=
   λ _ ↦ rfl
 
 @[simp]
