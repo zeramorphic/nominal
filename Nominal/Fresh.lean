@@ -97,7 +97,7 @@ theorem fresh_perm_iff [MulPerm 𝔸 α] [MulPerm 𝔸 β] (x : α) (y : β) (π
   · intro h
     exact h.perm π
 
-theorem fresh_perm_iff_inv_perm_fresh [Nominal 𝔸 α] [Nominal 𝔸 β] (x : α) (y : β) (π : Finperm 𝔸) :
+theorem fresh_perm_iff_inv_perm_fresh [MulPerm 𝔸 α] [MulPerm 𝔸 β] (x : α) (y : β) (π : Finperm 𝔸) :
     x #[𝔸] (π ⬝ y) ↔ (π⁻¹ ⬝ x) #[𝔸] y := by
   have := fresh_perm_iff (π⁻¹ ⬝ x) y π
   rwa [perm_inv_perm] at this
