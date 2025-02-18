@@ -402,7 +402,8 @@ theorem supp_eq_of_strongSupports [Infinite 𝔸] {α : Sort*} [MulPerm 𝔸 α]
   intro t ht
   exact subset_of_strongSupports hs ht ha
 
-theorem Nominal.mem_supp_iff_names_infinite [Infinite 𝔸] {α : Sort*} [Nominal 𝔸 α] (x : α) (a : 𝔸) :
+theorem mem_supp_iff_names_infinite [Infinite 𝔸] {α : Sort*} [MulPerm 𝔸 α]
+    (x : α) (hx : FinitelySupported 𝔸 x) (a : 𝔸) :
     a ∈ supp 𝔸 x ↔ {b | swap a b ⬝ x ≠ x}.Infinite := by
   constructor
   · intro h
@@ -410,7 +411,7 @@ theorem Nominal.mem_supp_iff_names_infinite [Infinite 𝔸] {α : Sort*} [Nomina
     rw [Set.not_infinite] at h'
     obtain ⟨t, ht⟩ := h'.exists_finset
     clear h'
-    rw [mem_supp_iff] at h
+    rw [mem_supp_iff' x hx] at h
     have := h t ?_
     · rw [ht] at this
       simp at this
@@ -427,9 +428,13 @@ theorem Nominal.mem_supp_iff_names_infinite [Infinite 𝔸] {α : Sort*} [Nomina
     apply (supp 𝔸 x ∪ {a}).finite_toSet.subset
     intro b hb
     by_contra hb'
-    have := supp_supports 𝔸 x
+    have := supp_supports' x hx
     rw [supports_iff] at this
     exact hb (this a b h (by aesop) (by aesop))
+
+theorem Nominal.mem_supp_iff_names_infinite [Infinite 𝔸] {α : Sort*} [Nominal 𝔸 α] (x : α) (a : 𝔸) :
+    a ∈ supp 𝔸 x ↔ {b | swap a b ⬝ x ≠ x}.Infinite :=
+  _root_.mem_supp_iff_names_infinite x (Nominal.supported x) a
 
 theorem Nominal.swap_perm_eq_of_swap_perm_eq [Infinite 𝔸] {α : Sort*} [Nominal 𝔸 α]
     (x : α) (a b c : 𝔸) (hbc : b ≠ c) (hca : c ≠ a) :

@@ -38,7 +38,7 @@ theorem name_fresh_name_iff [Infinite 𝔸] (a b : 𝔸) :
     a #[𝔸] b ↔ a ≠ b := by
   simp only [name_fresh_iff, Nominal.name_supp_eq, Finset.mem_singleton, ne_eq]
 
-theorem exists_fresh [Infinite 𝔸] [MulPerm 𝔸 α] (x : α) :
+theorem exists_name_fresh [Infinite 𝔸] [MulPerm 𝔸 α] (x : α) :
     ∃ a : 𝔸, a #[𝔸] x := by
   simp only [name_fresh_iff]
   exact Infinite.exists_not_mem_finset (supp 𝔸 x)
@@ -72,7 +72,7 @@ theorem fresh_iff_exists_swap_perm_eq [Infinite 𝔸] [Nominal 𝔸 α] (a : �
   constructor
   · rw [fresh_iff_forall_swap_perm_eq]
     intro h
-    obtain ⟨b, hb⟩ := exists_fresh (𝔸 := 𝔸) x
+    obtain ⟨b, hb⟩ := exists_name_fresh (𝔸 := 𝔸) x
     exact ⟨b, hb, h b hb⟩
   · rintro ⟨b, hb₁, hb₂⟩
     have := congr_arg (b ∈ supp 𝔸 ·) hb₂
@@ -109,3 +109,16 @@ theorem Equivariant.rename_of_fresh [Infinite 𝔸] [Nominal 𝔸 α]
   have := apply₂_perm_eq h (swap a b) b x
   simp only [perm_prop, perm_name_eq, swap_apply_right, eq_iff_iff] at this
   rw [this, swap_perm_eq_of_fresh a b x ha hb]
+
+theorem exists_fresh (𝔸 : Type*) [DecidableEq 𝔸] [Infinite 𝔸] [MulPerm 𝔸 α]
+    (β : Type*) [MulPerm 𝔸 β] [Nonempty β] (x : α) :
+    ∃ y : β, y #[𝔸] x := by
+  have y : β := Nonempty.some inferInstance
+  obtain ⟨π, hπ₁, hπ₂⟩ := Finperm.exists_fresh (supp 𝔸 y) (supp 𝔸 x)
+  use π ⬝ y
+  rw [fresh_def, Finset.disjoint_iff_ne]
+  rintro a ha₁ _ ha₂ rfl
+  rw [supp_perm_eq, Finset.mem_perm, perm_name_eq] at ha₁
+  have := hπ₁ (π⁻¹ a) ha₁
+  rw [apply_inv_self] at this
+  contradiction

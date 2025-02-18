@@ -80,6 +80,11 @@ theorem FinitelySupported.not {α : Sort*} [MulPerm 𝔸 α] {p : α → Prop}
     FinitelySupported 𝔸 (λ x ↦ ¬p x) :=
   (finitelySupported_of_isDiscrete (¬ ·)).comp h
 
+theorem Equivariant.empty_supports {α : Type*} [MulPerm 𝔸 α] (x : α) (h : Equivariant 𝔸 x) :
+    Supports (∅ : Finset 𝔸) x := by
+  intro π hπ
+  rw [h]
+
 theorem equivariant_iff_supp_eq_empty [Infinite 𝔸] {α : Type*} [Nominal 𝔸 α] (x : α) :
     Equivariant 𝔸 x ↔ supp 𝔸 x = ∅ := by
   constructor
@@ -458,25 +463,21 @@ end Nominal.Equaliser
 # Initial and terminal object
 -/
 
-instance {α : Type*} [Subsingleton α] : MulPerm 𝔸 α where
+instance : MulPerm 𝔸 Unit where
   perm _ := id
   one_perm _ := rfl
   mul_perm _ _ _ := rfl
 
-instance {α : Type*} [Subsingleton α] : Nominal 𝔸 α where
+instance : Nominal 𝔸 Unit where
   supported _ := ⟨∅, λ _ _ ↦ rfl⟩
 
-theorem equivariant_of_isEmpty {α β : Type*} [IsEmpty α] [MulPerm 𝔸 β] (f : α → β) :
-    Equivariant 𝔸 f := by
-  intro π
-  ext x
-  cases IsEmpty.false x
+instance : MulPerm 𝔸 Empty where
+  perm _ := id
+  one_perm _ := rfl
+  mul_perm _ _ _ := rfl
 
-theorem equivariant_of_subsingleton {α β : Type*} [MulPerm 𝔸 α] [Subsingleton β] (f : α → β) :
-    Equivariant 𝔸 f := by
-  intro π
-  ext x
-  apply Subsingleton.allEq
+instance : Nominal 𝔸 Empty where
+  supported _ := ⟨∅, λ _ _ ↦ rfl⟩
 
 /-!
 # Coreflection
@@ -639,3 +640,8 @@ theorem perm_eq_of_fresh [Infinite 𝔸] {π : Finperm 𝔸} {α : Type*} [Nomin
     π ⬝ x = x := by
   apply Nominal.supp_supports 𝔸
   rwa [Finperm.fresh_iff] at h
+
+theorem inv_perm_eq_of_fresh [Infinite 𝔸] {π : Finperm 𝔸} {α : Type*} [Nominal 𝔸 α] {x : α}
+    (h : π #[𝔸] x) :
+    π⁻¹ ⬝ x = x := by
+  conv_lhs => rw [← perm_eq_of_fresh h, inv_perm_perm]

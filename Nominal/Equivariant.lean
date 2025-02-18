@@ -65,7 +65,7 @@ theorem supp_apply_subset {α β : Type*} [Nominal 𝔸 α] [Nominal 𝔸 β]
   intro s hs
   exact ha s (hs.map f hf)
 
-theorem Supports.supports_apply {α β : Type*} [Nominal 𝔸 α] [Nominal 𝔸 β]
+theorem Supports.apply {α β : Type*} [MulPerm 𝔸 α] [MulPerm 𝔸 β]
     {f : α → β} {s t : Finset 𝔸} (hf : Supports s f) {x : α} (hx : Supports t x) :
     Supports (s ∪ t) (f x) := by
   intro π hπ
@@ -80,7 +80,7 @@ theorem supp_apply_subset' [Infinite 𝔸] {α β : Type*} [Nominal 𝔸 α] [No
     (f : α → β) (hf : FinitelySupported 𝔸 f) (x : α) :
     supp 𝔸 (f x) ⊆ supp 𝔸 f ∪ supp 𝔸 x := by
   rw [Nominal.supp_subset_iff]
-  apply Supports.supports_apply
+  apply Supports.apply
   exact supp_supports' f hf
   exact Nominal.supp_supports 𝔸 x
 

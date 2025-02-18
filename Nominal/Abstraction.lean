@@ -77,6 +77,7 @@ theorem rel_equivalence :
     Equivalence (Rel : Abstract' 𝔸 α β → Abstract' 𝔸 α β → Prop) :=
   ⟨rel_refl, rel_symm, rel_trans⟩
 
+omit [Infinite 𝔸] in
 theorem rel_perm {x y : Abstract' 𝔸 α β} (h : Rel x y) (π : Finperm 𝔸) :
     Rel (π ⬝ x) (π ⬝ y) := by
   obtain ⟨π', rfl, hπ'⟩ := h
