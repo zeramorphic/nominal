@@ -224,109 +224,106 @@ theorem ev_spec [Infinite 𝔸] [MulPerm 𝔸 α] [MulPerm 𝔸 β] (x : (α -�
 # Transpose
 -/
 
-theorem transp_equivariant [Infinite 𝔸] [Nominal 𝔸 α] [MulPerm 𝔸 β] [Nominal 𝔸 γ]
-    (f : β ∗[𝔸] α → γ) (hf : Equivariant 𝔸 f) :
-    Equivariant 𝔸 λ (y : β) (x : α) (z : γ) ↦
-      ∃ π : Finperm 𝔸, π #[𝔸] x ∧ π #[𝔸] z ∧ ∃ h, z = f ⟨π ⬝ y, x, h⟩ := by
-  intro π'
-  ext y x z
-  constructor
-  · rintro ⟨π, h₁, h₂, h₃, h₄⟩
-    refine ⟨π' * π * π'⁻¹, ?_⟩
-    simp only [Finperm.fresh_iff, supp_perm_eq, Finset.mem_perm, _root_.inv_inv, perm_name_eq,
-      coe_mul, Function.comp_apply] at h₁ h₂ ⊢
-    refine ⟨?_, ?_, ?_, ?_⟩
-    · intro a ha
-      rw [h₁, apply_inv_self]
-      rwa [apply_inv_self]
-    · intro a ha
-      rw [h₂, apply_inv_self]
-      rwa [apply_inv_self]
-    · have := h₃.perm π'
-      rw [perm_inv_perm] at this
-      rwa [mul_perm, mul_perm]
-    · rw [inv_perm_eq_iff] at h₄
-      simp only [h₄, apply_perm_eq hf, SepProd.perm_def, perm_inv_perm, mul_perm]
-  · rintro ⟨π, h₁, h₂, h₃, h₄⟩
-    refine ⟨π'⁻¹ * π * π', ?_⟩
-    simp only [Finperm.fresh_iff, supp_perm_eq, Finset.mem_perm, _root_.inv_inv, perm_name_eq,
-      coe_mul, Function.comp_apply] at h₁ h₂ ⊢
-    refine ⟨?_, ?_, ?_, ?_⟩
-    · intro a ha
-      rwa [h₁, inv_apply_self]
-    · intro a ha
-      rwa [h₂, inv_apply_self]
-    · rw [mul_perm, mul_perm, perm_inv_perm]
-      exact h₃.perm π'⁻¹
-    · simp only [h₄, apply_perm_eq hf, SepProd.perm_def, perm_inv_perm, mul_perm]
+def transpAux [Infinite 𝔸] [MulPerm 𝔸 α] [MulPerm 𝔸 β] [MulPerm 𝔸 γ]
+    (f : β ∗[𝔸] α → γ) (y : β) (x : α) (z : γ) : Prop :=
+  (∀ x' : α, ∀ h, ∀ a ∈ supp 𝔸 x, a ∈ supp 𝔸 x' ∨ a ∉ supp 𝔸 (f ⟨y, x', h⟩)) ∧
+  ∃ π : Finperm 𝔸,
+    (∀ a, a ∈ supp 𝔸 y → a ∈ supp 𝔸 x → π a ∉ supp 𝔸 y ∧ π a ∉ supp 𝔸 x) ∧
+    (∀ a, a ∈ supp 𝔸 y ∨ a ∈ supp 𝔸 x → a ∉ supp 𝔸 y ∨ a ∉ supp 𝔸 x → π a = a) ∧
+    ∃ h, z = f ⟨π ⬝ y, x, h⟩
 
-theorem supports_transp [Infinite 𝔸] [Nominal 𝔸 α] [Nominal 𝔸 β] [Nominal 𝔸 γ]
+theorem transpAux_dom_eq [Infinite 𝔸] [MulPerm 𝔸 α] [MulPerm 𝔸 β] [MulPerm 𝔸 γ]
+    (f : β ∗[𝔸] α → γ) (y : β) (x : α) :
+    x ∈ Rel.dom (transpAux f y) ↔
+    ∀ x' : α, ∀ h, ∀ a ∈ supp 𝔸 x, a ∈ supp 𝔸 x' ∨ a ∉ supp 𝔸 (f ⟨y, x', h⟩) := by
+  simp only [dom, transpAux, Set.mem_setOf_eq, exists_and_left, and_iff_left_iff_imp]
+  intro h
+  obtain ⟨π, hπ₁, hπ₂⟩ := Finperm.exists_fresh (supp 𝔸 y ∩ supp 𝔸 x) (supp 𝔸 y ∪ supp 𝔸 x)
+  suffices (π ⬝ y) #[𝔸] x by
+    refine ⟨_, π, ?_, ?_, this, rfl⟩
+    · simp only [Finset.mem_inter, Finset.mem_union, not_or, and_imp] at hπ₁
+      exact hπ₁
+    · simp only [Finset.mem_sdiff, Finset.mem_union, Finset.mem_inter, not_and_or, and_imp] at hπ₂
+      exact hπ₂
+  rw [fresh_def, Finset.disjoint_iff_ne]
+  rintro a hay _ hax rfl
+  rw [supp_perm_eq, Finset.mem_perm, perm_name_eq] at hay
+  specialize hπ₁ (π⁻¹ a)
+  simp only [Finset.mem_inter, hay, true_and, apply_inv_self, Finset.mem_union, hax, or_true,
+    not_true_eq_false, imp_false] at hπ₁
+  specialize hπ₂ (π⁻¹ a)
+  simp only [Finset.mem_sdiff, Finset.mem_union, hay, hπ₁, or_false, Finset.mem_inter, and_false,
+    not_false_eq_true, and_self, apply_inv_self, forall_const] at hπ₂
+  rw [← hπ₂] at hπ₁
+  contradiction
+
+theorem transpAux_equivariant' [Infinite 𝔸] [MulPerm 𝔸 α] [MulPerm 𝔸 β] [MulPerm 𝔸 γ]
+    (f : β ∗[𝔸] α → γ) (hf : Equivariant 𝔸 f) (y : β) (x : α) (z : γ) (π : Finperm 𝔸) :
+    transpAux f y x z → transpAux f (π ⬝ y) (π ⬝ x) (π ⬝ z) := by
+  rintro ⟨h, π', h₁, h₂, h₃, rfl⟩
+  refine ⟨?_, π * π' * π⁻¹, ?_, ?_, ?_, ?_⟩
+  · intro x' hx' a ha
+    have := h (π⁻¹ ⬝ x') (by simpa only [inv_perm_perm] using hx'.perm π⁻¹) (π⁻¹ a)
+      (by simpa only [supp_perm_eq, Finset.mem_perm, perm_name_eq] using ha)
+    simp only [supp_perm_eq, Finset.mem_perm, _root_.inv_inv, perm_name_eq, apply_inv_self] at this
+    obtain this | this := this
+    · exact Or.inl this
+    · right
+      rw [← perm_name_eq, ← Finset.mem_perm, ← supp_perm_eq,
+        apply_perm_eq hf, SepProd.perm_def] at this
+      simp only [perm_inv_perm] at this
+      exact this
+  · intro a ha ha'
+    simp only [supp_perm_eq, Finset.mem_perm, perm_name_eq] at ha ha'
+    simp only [supp_perm_eq, coe_mul, Function.comp_apply, Finset.mem_perm, perm_name_eq,
+      inv_apply_self]
+    exact h₁ (π⁻¹ a) ha ha'
+  · intro a ha ha'
+    simp only [supp_perm_eq, Finset.mem_perm, perm_name_eq] at ha ha'
+    simp only [coe_mul, Function.comp_apply]
+    rw [← perm_name_eq _ (π' (π⁻¹ a)), perm_eq_iff_eq_inv_perm]
+    exact h₂ (π⁻¹ a) ha ha'
+  · simp only [mul_perm, inv_perm_perm]
+    exact h₃.perm π
+  · simp only [apply_perm_eq hf, SepProd.perm_def, mul_perm, inv_perm_perm]
+
+theorem transpAux_equivariant [Infinite 𝔸] [MulPerm 𝔸 α] [MulPerm 𝔸 β] [MulPerm 𝔸 γ]
+    (f : β ∗[𝔸] α → γ) (hf : Equivariant 𝔸 f) :
+    Equivariant 𝔸 (transpAux f) := by
+  intro π
+  ext y x z
+  simp only [Function.perm_def, IsDiscrete.perm_eq]
+  constructor
+  · have := transpAux_equivariant' f hf (π⁻¹ ⬝ y) (π⁻¹ ⬝ x) (π⁻¹ ⬝ z) π
+    rwa [perm_inv_perm, perm_inv_perm, perm_inv_perm] at this
+  · exact transpAux_equivariant' f hf y x z π⁻¹
+
+theorem supports_transpAux [Infinite 𝔸] [MulPerm 𝔸 α] [Nominal 𝔸 β] [MulPerm 𝔸 γ]
     (f : β ∗[𝔸] α → γ) (hf : Equivariant 𝔸 f) (y : β) :
-    Supports (supp 𝔸 y) λ (x : α) (z : γ) ↦
-      ∃ π : Finperm 𝔸, π #[𝔸] x ∧ π #[𝔸] z ∧ ∃ h, z = f ⟨π ⬝ y, x, h⟩ := by
-  have := (transp_equivariant f hf).empty_supports
+    Supports (supp 𝔸 y) (transpAux f y) := by
+  have := (transpAux_equivariant f hf).empty_supports
   have := this.apply (Nominal.supp_supports 𝔸 y)
   simp_rw [Finset.empty_union] at this
   exact this
 
-theorem supp_transp_subset [Infinite 𝔸] [Nominal 𝔸 α] [Nominal 𝔸 β] [Nominal 𝔸 γ]
-    (f : β ∗[𝔸] α → γ) (hf : Equivariant 𝔸 f) (y : β) (a : 𝔸) :
-    a ∈ (supp 𝔸 λ (x : α) (z : γ) ↦
-      ∃ π : Finperm 𝔸, π #[𝔸] x ∧ π #[𝔸] z ∧ ∃ h, z = f ⟨π ⬝ y, x, h⟩) →
-    ∃ x h, a ∈ supp 𝔸 (f ⟨y, x, h⟩) ∧ a ∉ supp 𝔸 x := by
-  sorry
-
-theorem mem_supp_transp_iff [Infinite 𝔸] [Nominal 𝔸 α] [Nominal 𝔸 β] [Nominal 𝔸 γ]
-    (f : β ∗[𝔸] α → γ) (hf : Equivariant 𝔸 f) (y : β) (a : 𝔸) :
-    a ∈ (supp 𝔸 λ (x : α) (z : γ) ↦
-      ∃ π : Finperm 𝔸, π #[𝔸] x ∧ π #[𝔸] z ∧ ∃ h, z = f ⟨π ⬝ y, x, h⟩) ↔
-    ∃ x h, a ∈ supp 𝔸 (f ⟨y, x, h⟩) ∧ a ∉ supp 𝔸 x := by
-  sorry
-
-theorem transp_coinjective [Infinite 𝔸] [Nominal 𝔸 α] [MulPerm 𝔸 β] [Nominal 𝔸 γ]
+theorem transpAux_coinjective [Infinite 𝔸] [MulPerm 𝔸 α] [MulPerm 𝔸 β] [MulPerm 𝔸 γ]
     (f : β ∗[𝔸] α → γ) (hf : Equivariant 𝔸 f) (y : β) :
-    Rel.Coinjective λ (x : α) (z : γ) ↦
-      ∃ π : Finperm 𝔸, π #[𝔸] x ∧ π #[𝔸] z ∧ ∃ h, z = f ⟨π ⬝ y, x, h⟩ := by
+    Rel.Coinjective (transpAux f y) := by
   constructor
-  rintro z₁ z₂ x ⟨π₁, hx₁, hz₁, hy₁, rfl⟩ ⟨π₂, hx₂, hz₂, hy₂, rfl⟩
-  rw [← inv_perm_eq_of_fresh hz₁, ← inv_perm_eq_of_fresh hz₂]
-  simp only [apply_perm_eq hf, SepProd.perm_def, inv_perm_perm]
-  congr 2
-  rw [inv_perm_eq_of_fresh hx₁, inv_perm_eq_of_fresh hx₂]
-
-theorem mem_supp_transp_iff' [Infinite 𝔸] [Nominal 𝔸 α] [Nominal 𝔸 β] [Nominal 𝔸 γ]
-    (f : β ∗[𝔸] α → γ) (hf : Equivariant 𝔸 f) (y : β) (a : 𝔸) :
-    (a ∈ supp 𝔸 λ (x : α) (z : γ) ↦
-      ∃ π : Finperm 𝔸, π #[𝔸] x ∧ π #[𝔸] z ∧ ∃ h, z = f ⟨π ⬝ y, x, h⟩) ↔
-    ∃ x z, (∃ π : Finperm 𝔸, π #[𝔸] x ∧ π #[𝔸] z ∧ ∃ (h : (π ⬝ y) #[𝔸] x),
-      z = f { fst := π ⬝ y, snd := x, sep := h }) ∧
-      a ∈ supp 𝔸 z \ supp 𝔸 x := by
-  rw [mem_supp_transp_iff f hf]
-  constructor
-  · intro ⟨x, hyx, ha₁, ha₂⟩
-    refine ⟨x, f ⟨y, x, hyx⟩, ⟨1, ?_, ?_, ?_, ?_⟩, ?_⟩
-    · simp only [Finperm.fresh_iff, coe_one, id_eq, implies_true]
-    · simp only [Finperm.fresh_iff, coe_one, id_eq, implies_true]
-    · rwa [one_perm]
-    · simp only [one_perm]
-    · simp only [Finset.mem_sdiff, ha₁, ha₂, not_false_eq_true, and_self]
-  · rintro ⟨x, z, ⟨π, hx, hz, hy, rfl⟩, ha⟩
-    simp only [Finset.mem_sdiff] at ha
-    refine ⟨x, ?_, ?_, ha.2⟩
-    · rwa [← perm_eq_of_fresh hx, fresh_perm_iff] at hy
-    · rw [← inv_perm_eq_of_fresh hz, apply_perm_eq hf, SepProd.perm_def] at ha
-      simp only [inv_perm_perm, inv_perm_eq_of_fresh hx] at ha
-      exact ha.1
+  intro z₁ z₂ x h₁ h₂
+  obtain ⟨h, π, hπ₁, hπ₂, hπ₃, rfl⟩ := h₁
+  obtain ⟨h', π', hπ₁', hπ₂', hπ₃', rfl⟩ := h₂
+  sorry
 
 /-- The transpose of an equivariant function `β ∗ α → γ` across the adjunction,
 giving an equivariant function `β → (α -∗ γ)`. -/
-def transp [Infinite 𝔸] [Nominal 𝔸 α] [Nominal 𝔸 β] [Nominal 𝔸 γ]
+def transp [Infinite 𝔸] [MulPerm 𝔸 α] [Nominal 𝔸 β] [MulPerm 𝔸 γ]
     (f : β ∗[𝔸] α → γ) (hf : Equivariant 𝔸 f) (y : β) :
     α -∗[𝔸] γ where
-  rel x z := ∃ π : Finperm 𝔸, π #[𝔸] x ∧ π #[𝔸] z ∧ ∃ h, z = f ⟨π ⬝ y, x, h⟩
-  rel_fs := ⟨_, supports_transp f hf y⟩
-  rel_coinjective := transp_coinjective f hf y
+  rel := transpAux f y
+  rel_fs := ⟨_, supports_transpAux f hf y⟩
+  rel_coinjective := transpAux_coinjective f hf y
   mem_dom_iff := sorry
-  mem_supp_iff := mem_supp_transp_iff' f hf y
+  mem_supp_iff := sorry
 
 end SepImp

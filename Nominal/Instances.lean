@@ -628,7 +628,6 @@ protected theorem Finperm.supp_eq [Infinite 𝔸] (π : Finperm 𝔸) :
   · apply support_subset_of_supports
     apply Nominal.supp_supports
 
-@[simp]
 theorem Finperm.fresh_iff [Infinite 𝔸] (π : Finperm 𝔸) {α : Type*} [MulPerm 𝔸 α] (x : α) :
     π #[𝔸] x ↔ ∀ a ∈ supp 𝔸 x, π a = a := by
   simp only [fresh_def, Finperm.supp_eq, Finset.disjoint_iff_inter_eq_empty,
