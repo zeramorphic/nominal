@@ -400,6 +400,17 @@ theorem swaps_inv [DecidableEq α] {s t : Finset α} (hst : Disjoint s t) (π : 
     (swaps hst π)⁻¹ = swaps hst π :=
   rfl
 
+@[simp]
+theorem swaps_support [DecidableEq α] {s t : Finset α} (hst : Disjoint s t) (π : s ≃ t) :
+    (swaps hst π).support = s ∪ t :=
+  rfl
+
+@[simp]
+theorem swaps_swaps [DecidableEq α] {s t : Finset α} (hst : Disjoint s t) (π : s ≃ t) :
+    swaps hst π * swaps hst π = 1 := by
+  rw [mul_eq_one_iff_eq_inv]
+  rfl
+
 theorem swaps_eq_of_mem₁ [DecidableEq α] {s t : Finset α} {hst : Disjoint s t} {π : s ≃ t}
     (a : α) (ha : a ∈ s) :
     swaps hst π a = π ⟨a, ha⟩ := by

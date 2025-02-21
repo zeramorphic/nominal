@@ -222,6 +222,8 @@ theorem ev_spec [Infinite 𝔸] [MulPerm 𝔸 α] [MulPerm 𝔸 β] (x : (α -�
 
 /-!
 # Transpose
+
+This follows the proof of "Generalised Name Abstraction for Nominal Sets", Clouston.
 -/
 
 def transpAux [Infinite 𝔸] [MulPerm 𝔸 α] [MulPerm 𝔸 β] [MulPerm 𝔸 γ]
@@ -257,7 +259,7 @@ def _root_.Equiv.perm {α : Type*} [MulPerm 𝔸 α] {s t : Finset α}
 
 theorem transpAux_dom_eq [Infinite 𝔸] [MulPerm 𝔸 α] [MulPerm 𝔸 β] [MulPerm 𝔸 γ]
     (f : β ∗[𝔸] α → γ) (y : β) (x : α) :
-    x ∈ Rel.dom (transpAux f y) ↔
+    x ∈ dom (transpAux f y) ↔
     ∀ x' : α, ∀ h, ∀ a ∈ supp 𝔸 x, a ∈ supp 𝔸 x' ∨ a ∉ supp 𝔸 (f ⟨y, x', h⟩) := by
   simp only [dom, transpAux, Set.mem_setOf_eq, exists_and_left, and_iff_left_iff_imp]
   intro h
@@ -367,11 +369,11 @@ theorem supports_transpAux [Infinite 𝔸] [MulPerm 𝔸 α] [Nominal 𝔸 β] [
 
 theorem transpAux_coinjective [Infinite 𝔸] [Nominal 𝔸 α] [Nominal 𝔸 β] [Nominal 𝔸 γ]
     (f : β ∗[𝔸] α → γ) (hf : Equivariant 𝔸 f) (y : β) :
-    Rel.Coinjective (transpAux f y) := by
+    Coinjective (transpAux f y) := by
   constructor
   intro z₁ z₂ x h₁ h₂
   obtain ⟨h, s, hs, e, he, rfl⟩ := h₁
-  obtain ⟨h', s', hs', e', he', rfl⟩ := h₂
+  obtain ⟨-, s', hs', e', -, rfl⟩ := h₂
   rw [Finset.disjoint_union_left] at hs hs'
   obtain ⟨π, hπ₁, hπ₂⟩ := exists_extension (e.symm.trans e')
   have := apply_perm_eq hf π ⟨_, x, he⟩
@@ -436,6 +438,177 @@ theorem transpAux_coinjective [Infinite 𝔸] [Nominal 𝔸 α] [Nominal 𝔸 β
       · simp only [Finset.mem_inter, hax, and_false, not_false_eq_true]
       · exact has
 
+theorem transpAux_of_fresh [Infinite 𝔸] [Nominal 𝔸 α] [Nominal 𝔸 β] [Nominal 𝔸 γ]
+    (f : β ∗[𝔸] α → γ) (hf : Equivariant 𝔸 f) (y : β) (x : α) (h : y #[𝔸] x) :
+    transpAux f y x (f ⟨y, x, h⟩) := by
+  refine ⟨?_, ∅, λ ⦃_⦄ _ ↦ id, ?_, ?_, ?_⟩
+  · intro x' hx' b hbx
+    have hby : b ∉ supp 𝔸 y := by
+      intro hby
+      rw [fresh_def, Finset.disjoint_iff_ne] at h
+      exact h b hby b hbx rfl
+    rw [← imp_iff_or_not]
+    intro hbf
+    have := supp_apply_subset f hf _ hbf
+    simp only [SepProd.supp_eq, Finset.mem_union, hby, false_or] at this
+    exact this
+  · apply Finset.equivOfCardEq
+    simp only [Finset.card_empty, Finset.card_eq_zero, ← Finset.disjoint_iff_inter_eq_empty]
+    exact h
+  · rwa [perm_eq_of_fresh]
+    rw [fresh_def, Finset.disjoint_iff_inter_eq_empty] at h
+    rw [fresh_def, Finperm.supp_eq, swaps_support, h, Finset.union_idempotent]
+    exact Finset.disjoint_empty_left _
+  · congr 2
+    rw [perm_eq_of_fresh]
+    rw [fresh_def, Finset.disjoint_iff_inter_eq_empty] at h
+    rw [fresh_def, Finperm.supp_eq, swaps_support, h, Finset.union_idempotent]
+    exact Finset.disjoint_empty_left _
+
+theorem supp_subset_union_of_transpAux [Infinite 𝔸] [Nominal 𝔸 α] [Nominal 𝔸 β] [Nominal 𝔸 γ]
+    {f : β ∗[𝔸] α → γ} (hf : Equivariant 𝔸 f) {y : β} {x : α} {z : γ} :
+    transpAux f y x z → supp 𝔸 z ⊆ supp 𝔸 y ∪ supp 𝔸 x := by
+  intro h
+  apply supp_minimal
+  have := (supports_transpAux f hf y).apply (Nominal.supp_supports 𝔸 x)
+  intro π hπ
+  have := this π hπ
+  have h' := h
+  rw [← this, Function.perm_def, IsDiscrete.perm_eq] at h'
+  rw [perm_eq_iff_eq_inv_perm]
+  exact (transpAux_coinjective f hf y).coinjective h h'
+
+theorem transp_mem_supp_iff_aux [Infinite 𝔸] [Nominal 𝔸 α] [Nominal 𝔸 β] [Nominal 𝔸 γ]
+    (f : β ∗[𝔸] α → γ) (hf : Equivariant 𝔸 f) (y : β) (a : 𝔸) :
+    (∃ x z, transpAux f y x z ∧ a ∈ supp 𝔸 z \ supp 𝔸 x) ↔
+      ∃ x h, a ∈ supp 𝔸 (f ⟨y, x, h⟩) \ supp 𝔸 x := by
+  constructor
+  · rintro ⟨x, z, h, ha⟩
+    have hz' := supp_subset_union_of_transpAux hf h
+    obtain ⟨hz, s, hs, e, he, rfl⟩ := h
+    have hs' := hs.mono_left Finset.inter_subset_union
+    refine ⟨swaps hs' e ⬝ x, ?_, ?_⟩
+    · have := he.perm (swaps hs' e)
+      rwa [← mul_perm, swaps_swaps, one_perm] at this
+    have hs : a ∉ s := by
+      rw [Finset.mem_sdiff] at ha
+      have := hz' ha.1
+      rw [Finset.disjoint_iff_ne] at hs
+      exact (hs a this a).mt (· rfl)
+    have := Finset.perm_mem_perm ha (swaps hs' e)
+    rw [perm_name_eq, Finset.perm_sdiff, swaps_eq_of_not_mem] at this
+    · simp only [Finset.mem_sdiff, ← supp_perm_eq, apply_perm_eq hf,
+        SepProd.perm_def, ← mul_perm, swaps_swaps, one_perm] at this ⊢
+      exact this
+    · rw [Finset.mem_sdiff] at ha
+      simp only [Finset.mem_inter, ha.2, and_false, not_false_eq_true]
+    · exact hs
+  · rintro ⟨x, h, ha⟩
+    exact ⟨x, f ⟨y, x, h⟩, transpAux_of_fresh f hf y x h, ha⟩
+
+theorem transp_mem_supp_of [Infinite 𝔸] [Nominal 𝔸 α] [Nominal 𝔸 β] [Nominal 𝔸 γ]
+    (f : β ∗[𝔸] α → γ) (hf : Equivariant 𝔸 f) (y : β) (a : 𝔸) :
+    (∃ x z, transpAux f y x z ∧ a ∈ supp 𝔸 z \ supp 𝔸 x) →
+    a ∈ supp 𝔸 (transpAux f y) := by
+  rintro ⟨x, z, hz, ha⟩
+  rw [Finset.mem_sdiff] at ha
+  rw [mem_supp_iff_names_infinite _ ⟨_, supports_transpAux _ hf _⟩]
+  have := (supp 𝔸 (transpAux f y) ∪ supp 𝔸 x ∪ supp 𝔸 z).finite_toSet
+  apply (Set.Finite.infinite_compl this).mono
+  intro b hb
+  simp only [Finset.coe_union, Set.compl_union, Set.mem_inter_iff, Set.mem_compl_iff,
+    Finset.mem_coe] at hb
+  intro h
+  have hz' := (congr_fun₂ h x z).mpr hz
+  rw [Function.perm_def, swap_inv, Function.perm_def, swap_inv, IsDiscrete.perm_eq] at hz'
+  have : swap a b ⬝ x = x := by
+    apply Nominal.supp_supports 𝔸 x
+    intro c hc
+    rw [swap_apply_of_ne_of_ne]
+    · rintro rfl
+      exact ha.2 hc
+    · rintro rfl
+      exact hb.1.2 hc
+  rw [this] at hz'
+  have := congr_arg (a ∈ supp 𝔸 ·) ((transpAux_coinjective f hf y).coinjective hz hz')
+  simp only [ha.1, supp_perm_eq, Finset.mem_perm, swap_inv, perm_name_eq, swap_apply_left, hb.2,
+    eq_iff_iff, iff_false, not_true_eq_false] at this
+
+theorem transp_mem_supp_iff_aux' [Infinite 𝔸] [Nominal 𝔸 α] [Nominal 𝔸 β] [Nominal 𝔸 γ]
+    (f : β ∗[𝔸] α → γ) (hf : Equivariant 𝔸 f) (y : β) (x : α) (z : γ)
+    (a b : 𝔸) (ha : a ∈ supp 𝔸 y) (hb : b ∉ supp 𝔸 y) (hab : a ≠ b)
+    (h : ∀ x h, a ∉ supp 𝔸 (f ⟨y, x, h⟩) \ supp 𝔸 x) :
+    transpAux f (swap a b ⬝ y) x z → transpAux f y x z := by
+  sorry
+
+theorem transp_mem_supp_iff [Infinite 𝔸] [Nominal 𝔸 α] [Nominal 𝔸 β] [Nominal 𝔸 γ]
+    (f : β ∗[𝔸] α → γ) (hf : Equivariant 𝔸 f) (y : β) (a : 𝔸) :
+    a ∈ supp 𝔸 (transpAux f y) ↔
+      ∃ x z, transpAux f y x z ∧ a ∈ supp 𝔸 z \ supp 𝔸 x := by
+  refine ⟨?_, transp_mem_supp_of f hf y a⟩
+  rw [transp_mem_supp_iff_aux f hf]
+  contrapose!
+  intro ha
+  by_cases ha' : a ∈ supp 𝔸 y
+  swap
+  · contrapose! ha'
+    exact supp_minimal _ _ (supports_transpAux f hf y) ha'
+  rw [mem_supp_iff_names_infinite _ ⟨_, supports_transpAux _ hf _⟩, Set.not_infinite]
+  apply (supp 𝔸 y ∪ {a}).finite_toSet.subset
+  intro b hb
+  contrapose! hb
+  simp only [Finset.coe_union, Finset.coe_singleton, Set.union_singleton, Set.mem_insert_iff,
+    Finset.mem_coe, not_or] at hb
+  simp only [ne_eq, Set.mem_setOf_eq, not_not]
+  ext x z
+  simp only [Function.perm_def, swap_inv, IsDiscrete.perm_eq]
+  have hf' := transpAux_equivariant f hf (swap a b)
+  simp only [funext_iff, Function.perm_def, swap_inv, IsDiscrete.perm_eq, eq_iff_iff] at hf'
+  specialize hf' (swap a b ⬝ y) x z
+  simp only [← mul_perm, swap_swap, one_perm] at hf'
+  rw [hf']
+  constructor
+  · exact transp_mem_supp_iff_aux' f hf y x z a b ha' hb.2 (Ne.symm hb.1) ha
+  · have := transp_mem_supp_iff_aux' f hf (swap b a ⬝ y) x z b a ?_ ?_ hb.1 ?_
+    · intro h
+      rw [swap_comm]
+      apply this
+      rwa [← mul_perm, swap_swap, one_perm]
+    · simp only [supp_perm_eq, Finset.mem_perm, swap_inv, perm_name_eq, swap_apply_left]
+      exact ha'
+    · simp only [supp_perm_eq, Finset.mem_perm, swap_inv, perm_name_eq, swap_apply_right]
+      exact hb.2
+    · intro x' hx hb'
+      have := ha (swap b a ⬝ x') ?_
+      swap
+      · have := hx.perm (swap b a)
+        rwa [← mul_perm, swap_swap, one_perm] at this
+      · have hb'' := Finset.perm_mem_perm hb' (swap b a)
+        rw [perm_name_eq, swap_apply_left, Finset.perm_sdiff,
+          ← supp_perm_eq, ← supp_perm_eq, apply_perm_eq hf, SepProd.perm_def] at hb''
+        simp only [← mul_perm, swap_swap, one_perm, supp_perm_eq] at hb''
+        rw [← supp_perm_eq] at hb''
+        contradiction
+
+theorem transp_mem_dom_iff [Infinite 𝔸] [Nominal 𝔸 α] [Nominal 𝔸 β] [Nominal 𝔸 γ]
+    (f : β ∗[𝔸] α → γ) (hf : Equivariant 𝔸 f) (y : β) (x : α) :
+    x ∈ dom (transpAux f y) ↔ x #[𝔸] transpAux f y := by
+  rw [transpAux_dom_eq, fresh_def, Finset.disjoint_iff_ne]
+  simp only [transp_mem_supp_iff f hf, transp_mem_supp_iff_aux f hf]
+  constructor
+  · rintro h a ha b ⟨x', hx, hb⟩ rfl
+    rw [Finset.mem_sdiff] at hb
+    have := h x' hx a
+    simp only [ha, hb.2, hb.1, not_true_eq_false, or_self, imp_false] at this
+  · intro h x' hx b hb
+    by_contra hb'
+    simp only [not_or, Decidable.not_not] at hb'
+    have := h b hb b
+    simp only [Finset.mem_sdiff, exists_and_right, ne_eq, not_true_eq_false, imp_false, not_exists,
+      not_and, Decidable.not_not, forall_exists_index] at this
+    have := this x' hx
+    simp only [hb'.2, hb'.1, imp_false, not_true_eq_false] at this
+
 /-- The transpose of an equivariant function `β ∗ α → γ` across the adjunction,
 giving an equivariant function `β → (α -∗ γ)`. -/
 def transp [Infinite 𝔸] [Nominal 𝔸 α] [Nominal 𝔸 β] [Nominal 𝔸 γ]
@@ -444,7 +617,7 @@ def transp [Infinite 𝔸] [Nominal 𝔸 α] [Nominal 𝔸 β] [Nominal 𝔸 γ]
   rel := transpAux f y
   rel_fs := ⟨_, supports_transpAux f hf y⟩
   rel_coinjective := transpAux_coinjective f hf y
-  mem_dom_iff := sorry
-  mem_supp_iff := sorry
+  mem_dom_iff := transp_mem_dom_iff f hf y
+  mem_supp_iff := transp_mem_supp_iff f hf y
 
 end SepImp

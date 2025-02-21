@@ -295,6 +295,24 @@ theorem Finset.mem_perm {α : Type*} [MulPerm 𝔸 α]
   rw [Finset.perm_def]
   aesop
 
+theorem Finset.perm_mem_perm {α : Type*} [MulPerm 𝔸 α]
+    {x : α} {s : Finset α} (h : x ∈ s) (π : Finperm 𝔸) :
+    π ⬝ x ∈ π ⬝ s := by
+  rw [Finset.perm_def]
+  aesop
+
+theorem Finset.not_perm_mem_perm {α : Type*} [MulPerm 𝔸 α]
+    {x : α} {s : Finset α} (h : x ∉ s) (π : Finperm 𝔸) :
+    π ⬝ x ∉ π ⬝ s := by
+  rw [Finset.perm_def]
+  aesop
+
+theorem Finset.perm_sdiff {α : Type*} [DecidableEq α] [MulPerm 𝔸 α]
+    (π : Finperm 𝔸) (s t : Finset α) :
+    π ⬝ (s \ t) = π ⬝ s \ π ⬝ t := by
+  ext a
+  simp only [mem_perm, mem_sdiff]
+
 instance {α : Type*} [MulPerm 𝔸 α] : MulPerm 𝔸 (Finset α) where
   one_perm _ := by
     ext
