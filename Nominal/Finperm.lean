@@ -347,6 +347,78 @@ theorem toPerm_apply [DecidableEq α] {π : Finperm α} {s t : Finset α}
   rfl
 
 /-!
+# Multiple swaps
+-/
+
+def swapsFun [DecidableEq α] {s t : Finset α} (π : s ≃ t) (a : α) : α :=
+  if h : a ∈ s then
+    π ⟨a, h⟩
+  else if h : a ∈ t then
+    π.symm ⟨a, h⟩
+  else
+    a
+
+theorem swapsFun_involutive [DecidableEq α] {s t : Finset α} (hst : Disjoint s t) (π : s ≃ t) :
+    Function.Involutive (swapsFun π) := by
+  intro a
+  unfold swapsFun
+  rw [Finset.disjoint_iff_ne] at hst
+  by_cases hs : a ∈ s
+  · simp only [hs, ↓reduceDIte, Finset.coe_mem, Subtype.coe_eta, symm_apply_apply,
+      dite_eq_right_iff]
+    intro h
+    cases hst _ h _ (π ⟨a, hs⟩).prop rfl
+  by_cases ht : a ∈ t
+  · simp only [hs, ↓reduceDIte, ht, Finset.coe_mem, Subtype.coe_eta, apply_symm_apply]
+  · simp only [hs, ↓reduceDIte, ht]
+
+def swaps [DecidableEq α] {s t : Finset α} (hst : Disjoint s t) (π : s ≃ t) : Finperm α where
+  toFun := swapsFun π
+  invFun := swapsFun π
+  left_inv := swapsFun_involutive hst π
+  right_inv := swapsFun_involutive hst π
+  support := s ∪ t
+  mem_support_iff' := by
+    intro a
+    rw [Finset.disjoint_iff_ne] at hst
+    simp only [Finset.mem_union, swapsFun, ne_eq]
+    split_ifs with h₁ h₂
+    · simp only [h₁, true_or, true_iff]
+      intro h
+      have := (π ⟨a, h₁⟩).prop
+      rw [h] at this
+      exact hst a h₁ a this rfl
+    · simp only [h₁, h₂, or_true, true_iff]
+      intro h
+      have := (π.symm ⟨a, h₂⟩).prop
+      rw [h] at this
+      contradiction
+    · tauto
+
+@[simp]
+theorem swaps_inv [DecidableEq α] {s t : Finset α} (hst : Disjoint s t) (π : s ≃ t) :
+    (swaps hst π)⁻¹ = swaps hst π :=
+  rfl
+
+theorem swaps_eq_of_mem₁ [DecidableEq α] {s t : Finset α} {hst : Disjoint s t} {π : s ≃ t}
+    (a : α) (ha : a ∈ s) :
+    swaps hst π a = π ⟨a, ha⟩ := by
+  simp only [swaps, mk_apply, coe_fn_mk, swapsFun, ha, ↓reduceDIte]
+
+theorem swaps_eq_of_mem₂ [DecidableEq α] {s t : Finset α} {hst : Disjoint s t} {π : s ≃ t}
+    (a : α) (ha : a ∈ t) :
+    swaps hst π a = π.symm ⟨a, ha⟩ := by
+  rw [Finset.disjoint_iff_ne] at hst
+  simp only [swaps, mk_apply, coe_fn_mk, swapsFun, ha, ↓reduceDIte, dite_eq_right_iff]
+  intro ha'
+  cases hst a ha' a ha rfl
+
+theorem swaps_eq_of_not_mem [DecidableEq α] {s t : Finset α} {hst : Disjoint s t} {π : s ≃ t}
+    (a : α) (has : a ∉ s) (hat : a ∉ t) :
+    swaps hst π a = a := by
+  simp only [swaps, mk_apply, coe_fn_mk, swapsFun, has, ↓reduceDIte, hat]
+
+/-!
 # The homogeneity lemma
 
 This is lemma 1.14 in the Nominal Sets book.
@@ -445,7 +517,7 @@ theorem extendPerm_not_mem [DecidableEq α] {s t : Finset α} (π : s ≃ t)
 noncomputable def extendFinperm [DecidableEq α] {s t : Finset α} (π : s ≃ t) : Finperm α :=
   ofSubset (extendPerm π) (s ∪ t) (extendPerm_not_mem π)
 
-/-- The homogeneity lemma: there is a `Finperm α` extending any given permutation
+/-- The homogeneity lemma: there is a `Finperm α` extending any given equivalence
 of finite sets `s ≃ t`, acting as the identity outside `s ∪ t`. -/
 theorem exists_extension [DecidableEq α] {s t : Finset α} (π : s ≃ t) :
     ∃ π' : Finperm α, (∀ (a : α) (ha : a ∈ s), π' a = π ⟨a, ha⟩) ∧

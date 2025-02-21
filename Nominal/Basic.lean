@@ -80,6 +80,15 @@ theorem Finperm.perm_name_eq (π : Finperm 𝔸) (a : 𝔸) :
 def Supports {α : Sort*} [HasPerm 𝔸 α] (s : Finset 𝔸) (x : α) : Prop :=
   ∀ π : Finperm 𝔸, (∀ a ∈ s, π a = a) → π ⬝ x = x
 
+theorem Supports.perm_eq_perm {α : Sort*} [MulPerm 𝔸 α] {s : Finset 𝔸} {x : α}
+    (h : Supports s x) (π₁ π₂ : Finperm 𝔸) (hs : ∀ a ∈ s, π₁ a = π₂ a) :
+    π₁ ⬝ x = π₂ ⬝ x := by
+  have := h (π₂⁻¹ * π₁) ?_
+  · rwa [mul_perm, inv_perm_eq_iff] at this
+  · intro a ha
+    rw [mul_apply, inv_apply_eq_iff_eq]
+    exact hs a ha
+
 omit [DecidableEq 𝔸] in
 theorem Supports.mono {α : Sort*} [HasPerm 𝔸 α] {s t : Finset 𝔸} {x : α}
     (h : Supports s x) (h' : s ⊆ t) : Supports t x :=

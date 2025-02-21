@@ -102,6 +102,10 @@ theorem fresh_perm_iff_inv_perm_fresh [MulPerm 𝔸 α] [MulPerm 𝔸 β] (x : �
   have := fresh_perm_iff (π⁻¹ ⬝ x) y π
   rwa [perm_inv_perm] at this
 
+theorem perm_fresh_iff_fresh_inv_perm [MulPerm 𝔸 α] [MulPerm 𝔸 β] (x : α) (y : β) (π : Finperm 𝔸) :
+    (π ⬝ x) #[𝔸] y ↔ x #[𝔸] (π⁻¹ ⬝ y) := by
+  rw [fresh_comm, fresh_perm_iff_inv_perm_fresh, fresh_comm]
+
 theorem Equivariant.rename_of_fresh [Infinite 𝔸] [Nominal 𝔸 α]
     {p : 𝔸 → α → Prop} (h : Equivariant 𝔸 p) (a b : 𝔸) (x : α)
     (ha : a #[𝔸] x) (hb : b #[𝔸] x) :
