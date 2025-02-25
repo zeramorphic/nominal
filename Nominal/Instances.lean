@@ -85,15 +85,19 @@ theorem Equivariant.empty_supports {α : Type*} [MulPerm 𝔸 α] (x : α) (h : 
   intro π hπ
   rw [h]
 
+theorem Equivariant.supp_eq_empty {α : Type*} [MulPerm 𝔸 α] {x : α}
+    (h : Equivariant 𝔸 x) :
+    supp 𝔸 x = ∅ := by
+  rw [Finset.eq_empty_iff_forall_not_mem]
+  intro a ha
+  rw [mem_supp_iff' _ ⟨∅, h.empty_supports⟩] at ha
+  have := ha ∅ (λ π _ ↦ h π)
+  cases this
+
 theorem equivariant_iff_supp_eq_empty [Infinite 𝔸] {α : Type*} [Nominal 𝔸 α] (x : α) :
     Equivariant 𝔸 x ↔ supp 𝔸 x = ∅ := by
   constructor
-  · intro h
-    rw [Finset.eq_empty_iff_forall_not_mem]
-    intro a ha
-    rw [Nominal.mem_supp_iff] at ha
-    have := ha ∅ (λ π _ ↦ h π)
-    cases this
+  · exact Equivariant.supp_eq_empty
   · intro h π
     have := Nominal.supp_supports 𝔸 x
     rw [h] at this

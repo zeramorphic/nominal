@@ -183,6 +183,13 @@ def lift {γ : Sort*} (f : α → β → γ)
     [α|𝔸]β → γ :=
   Quotient.lift (λ x ↦ f x.param x.val) (λ x y ↦ hf x.param y.param x.val y.val)
 
+@[simp]
+theorem lift_mk {γ : Sort*} {f : α → β → γ}
+    {hf : ∀ (x₁ x₂ : α) (y₁ y₂ : β), Rel (𝔸 := 𝔸) ⟨x₁, y₁⟩ ⟨x₂, y₂⟩ → f x₁ y₁ = f x₂ y₂}
+    (x : α) (y : β) :
+    lift f hf (⟨x⟩y) = f x y :=
+  rfl
+
 theorem ind {motive : [α|𝔸]β → Prop} (mk : ∀ x y, motive (⟨x⟩y)) :
     ∀ x, motive x :=
   Quotient.ind (λ x ↦ mk x.param x.val)
@@ -287,6 +294,7 @@ theorem fresh_induction [MulPerm 𝔸 α] [MulPerm 𝔸 β] [MulPerm 𝔸 γ] {m
   · convert this using 1
     rw [mk_eq_iff]
     refine ⟨π, rfl, ?_⟩
+    rw [Finperm.fresh_iff]
     aesop
   · rw [fresh_def, supp_perm_eq, Finset.disjoint_iff_ne]
     rintro a ha₁ _ ha₂ rfl
@@ -345,5 +353,50 @@ theorem map_mk [Nominal 𝔸 α] [Nominal 𝔸 β] [Nominal 𝔸 γ]
     {f : β → γ} {hf : FinitelySupported 𝔸 f} {a : α} {b : β} (hab : a #[𝔸] f) :
     map f hf (⟨a⟩b) = ⟨a⟩(f b) :=
   (exists_map f hf (⟨a⟩b)).choose_spec a b hab rfl
+
+/-- A *strong map* is a function that may only increase supports.
+Assuming `α` and `β` are nominal, we obtain the equation `supp 𝔸 (f x) = supp 𝔸 x`.
+That is, a strong equivariant function is support-preserving. -/
+def _root_.StrongMap (𝔸 : Type*) [DecidableEq 𝔸]
+    {α β : Type*} [MulPerm 𝔸 α] [MulPerm 𝔸 β] (f : α → β) : Prop :=
+  ∀ x : α, ∀ s : Finset 𝔸, Supports s (f x) → Supports s x
+
+theorem _root_.StrongMap.supp_eq [Nominal 𝔸 α] [Nominal 𝔸 β] {f : α → β}
+    (h : StrongMap 𝔸 f) (h' : Equivariant 𝔸 f) (x : α) :
+    supp 𝔸 (f x) = supp 𝔸 x := by
+  apply subset_antisymm
+  · apply supp_apply_subset f h'
+  · apply supp_minimal
+    apply h
+    apply Nominal.supp_supports
+
+theorem _root_.strongMap_of_supp_eq_supp [Nominal 𝔸 α] [Nominal 𝔸 β] {f : α → β}
+    (h' : ∀ x, supp 𝔸 (f x) = supp 𝔸 x) :
+    StrongMap 𝔸 f := by
+  intro x s hs
+  rw [← Nominal.supp_subset_iff] at hs ⊢
+  rwa [h'] at hs
+
+theorem amap_aux [Nominal 𝔸 α] [Nominal 𝔸 β] [Nominal 𝔸 γ]
+    (f : α → β) (hf₁ : Equivariant 𝔸 f) (hf₂ : StrongMap 𝔸 f)
+    (x₁ x₂ : α) (y₁ y₂ : γ) (h : (⟨x₁, y₁⟩ : Abstract' 𝔸 α γ).Rel ⟨x₂, y₂⟩) :
+    (⟨f x₁⟩y₁ : [β|𝔸]γ) = ⟨f x₂⟩y₂ := by
+  rw [mk_eq_iff]
+  obtain ⟨π, hπ₁, hπ₂⟩ := h
+  refine ⟨π, ?_, ?_⟩
+  · rw [Abstract'.perm_def, Abstract'.mk.injEq] at hπ₁
+    rw [Abstract'.perm_def, apply_perm_eq hf₁, hπ₁.1, hπ₁.2]
+  · rw [Finperm.fresh_iff] at hπ₂ ⊢
+    intro a ha
+    specialize hπ₂ a
+    apply hπ₂
+    simp only [Finset.names_supp_eq, Finset.mem_sdiff, hf₂.supp_eq hf₁] at ha ⊢
+    exact ha
+
+/-- Map a strong equivariant function over abstractions. -/
+def amap [Nominal 𝔸 α] [Nominal 𝔸 β] [Nominal 𝔸 γ]
+    (f : α → β) (hf₁ : Equivariant 𝔸 f) (hf₂ : StrongMap 𝔸 f)
+    (x : [α|𝔸]γ) : [β|𝔸]γ :=
+  x.lift (λ x y ↦ ⟨f x⟩y) (amap_aux f hf₁ hf₂)
 
 end Abstract

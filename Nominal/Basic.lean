@@ -429,6 +429,17 @@ theorem supp_eq_of_strongSupports [Infinite 𝔸] {α : Sort*} [MulPerm 𝔸 α]
   intro t ht
   exact subset_of_strongSupports hs ht ha
 
+def Strong (𝔸 : Type*) [DecidableEq 𝔸] {α : Sort*} [MulPerm 𝔸 α] (x : α) : Prop :=
+  StrongSupports (supp 𝔸 x) x
+
+theorem strong_iff [Infinite 𝔸] {α : Sort*} [MulPerm 𝔸 α] (x : α) :
+    Strong 𝔸 x ↔ ∃ s : Finset 𝔸, StrongSupports s x := by
+  constructor
+  · intro h
+    exact ⟨_, h⟩
+  · rintro ⟨s, h⟩
+    rwa [Strong, supp_eq_of_strongSupports x s h]
+
 theorem mem_supp_iff_names_infinite [Infinite 𝔸] {α : Sort*} [MulPerm 𝔸 α]
     (x : α) (hx : FinitelySupported 𝔸 x) (a : 𝔸) :
     a ∈ supp 𝔸 x ↔ {b | swap a b ⬝ x ≠ x}.Infinite := by

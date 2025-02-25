@@ -211,6 +211,20 @@ theorem rightUnitor_symm_apply_snd_eq [MulPerm 𝔸 α] (x : α) :
     ((rightUnitor α : α ∗[𝔸] Unit ≃ α).symm x).fst = x :=
   rfl
 
+/-- The left injection of an equivariant object. -/
+def leftInj [MulPerm 𝔸 α] [MulPerm 𝔸 β] (y : β) (hy : Equivariant 𝔸 y) (x : α) :
+    β ∗[𝔸] α where
+  fst := y
+  snd := x
+  sep := by
+    rw [fresh_def, hy.supp_eq_empty]
+    exact λ _ x _ ↦ x
+
+/-- The right injection of an equivariant object. -/
+def rightInj [MulPerm 𝔸 α] [MulPerm 𝔸 β] (y : β) (hy : Equivariant 𝔸 y) (x : α) :
+    α ∗[𝔸] β :=
+  symm β α (leftInj y hy x)
+
 def assoc' [Infinite 𝔸] [Nominal 𝔸 α] [Nominal 𝔸 β] [Nominal 𝔸 γ]
     (x : (α ∗[𝔸] β) ∗[𝔸] γ) : α ∗[𝔸] β ∗[𝔸] γ where
   fst := x.fst.fst
