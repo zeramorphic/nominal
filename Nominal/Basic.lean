@@ -11,7 +11,7 @@ open Finperm
 
 /-- A typeclass for types that have a `Finperm 𝔸`-action.
 We use a different notation `⬝` in order to avoid conflicts with `Pi.perm`. -/
-class HasPerm (𝔸 : Type*) (α : Sort*) where
+class HasPerm.{u} (𝔸 : Type*) (α : Sort u) where
   /-- Permute this type according to the given finite permutation of names. -/
   perm : Finperm 𝔸 → α → α
 
@@ -23,7 +23,7 @@ infixr:73 " ⬝ " => HasPerm.perm
 macro_rules | `($x ⬝ $y) => `(leftact% HasPerm.perm $x $y)
 
 /-- A typeclass for types that have a lawful `Finperm 𝔸`-action. -/
-class MulPerm (𝔸 : Type*) (α : Sort*) [DecidableEq 𝔸] extends HasPerm 𝔸 α where
+class MulPerm.{u} (𝔸 : Type*) [DecidableEq 𝔸] (α : Sort u) extends HasPerm 𝔸 α where
   one_perm : ∀ x : α, (1 : Finperm 𝔸) ⬝ x = x
   mul_perm : ∀ π₁ π₂ : Finperm 𝔸, ∀ x : α, (π₁ * π₂) ⬝ x = π₁ ⬝ π₂ ⬝ x
 
@@ -236,7 +236,7 @@ theorem supp_minimal {α : Sort*} [MulPerm 𝔸 α]
   rw [mem_supp_iff' x ⟨s, hs⟩] at ha
   exact ha s hs
 
-class Nominal (𝔸 : Type*) [DecidableEq 𝔸] (α : Sort*)
+class Nominal.{u} (𝔸 : Type*) [DecidableEq 𝔸] (α : Sort u)
     extends MulPerm 𝔸 α where
   supported : ∀ x : α, FinitelySupported 𝔸 x
 

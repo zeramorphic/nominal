@@ -628,6 +628,16 @@ theorem FS.val_injective {α : Type*} [MulPerm 𝔸 α] :
     Function.Injective (FS.val : FS 𝔸 α → α) :=
   Subtype.val_injective
 
+@[simp]
+theorem FS.val_mk {α : Type*} [MulPerm 𝔸 α] {x : α} {h : FinitelySupported 𝔸 x} :
+    ((⟨x, h⟩ : FS 𝔸 α) : α) = x :=
+  rfl
+
+@[simp]
+theorem FS.val_mk' {α : Type*} [MulPerm 𝔸 α] {x : α} {h : FinitelySupported 𝔸 x} :
+    FS.val (⟨x, h⟩ : {x : α // FinitelySupported 𝔸 x}) = x :=
+  rfl
+
 instance {α : Type*} [MulPerm 𝔸 α] : HasPerm 𝔸 (FS 𝔸 α) where
   perm π x := ⟨π ⬝ (x : α), x.prop.perm π⟩
 
@@ -659,6 +669,14 @@ elements of its codomain. -/
 def Equivariant.toFS {α β : Type*} [Nominal 𝔸 α] [MulPerm 𝔸 β]
     {f : α → β} (hf : Equivariant 𝔸 f) (x : α) : FS 𝔸 β :=
   ⟨f x, (Nominal.supported x).map f hf⟩
+
+theorem Equivariant.toFS_equivariant {α β : Type*} [Nominal 𝔸 α] [MulPerm 𝔸 β]
+    {f : α → β} (hf : Equivariant 𝔸 f) :
+    Equivariant 𝔸 hf.toFS := by
+  intro π
+  ext x : 2
+  rw [Function.perm_def, Equivariant.toFS, FS.perm_coe, FS.val_mk', apply_perm_eq hf, perm_inv_perm]
+  rfl
 
 @[simp]
 protected theorem FS.supp_eq {α : Type*} [MulPerm 𝔸 α] (x : FS 𝔸 α) :
