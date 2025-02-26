@@ -1,5 +1,6 @@
+import Mathlib.Algebra.Group.Basic
 import Mathlib.Data.Finset.Card
-import Mathlib.Data.Fintype.Card
+import Mathlib.Data.Fintype.EquivFin
 import Mathlib.Logic.Equiv.Defs
 
 open Equiv

@@ -1,4 +1,5 @@
 import Mathlib.Algebra.Group.Action.Sum
+import Mathlib.Logic.Function.Coequalizer
 import Mathlib.Data.Part
 import Nominal.Fresh
 
@@ -387,6 +388,72 @@ theorem Equivariant.uncurry₂ {α β γ : Type*} {δ : Sort*} [MulPerm 𝔸 α]
   rw [← h π x y z]
 
 /-!
+# Initial and terminal object
+-/
+
+instance : MulPerm 𝔸 Unit where
+  perm _ := id
+  one_perm _ := rfl
+  mul_perm _ _ _ := rfl
+
+instance : Nominal 𝔸 Unit where
+  supported _ := ⟨∅, λ _ _ ↦ rfl⟩
+
+instance : MulPerm 𝔸 Empty where
+  perm _ := id
+  one_perm _ := rfl
+  mul_perm _ _ _ := rfl
+
+instance : Nominal 𝔸 Empty where
+  supported _ := ⟨∅, λ _ _ ↦ rfl⟩
+
+/-!
+# Sigma types
+-/
+
+instance {ι : Type*} {α : ι → Type*} [(i : ι) → HasPerm 𝔸 (α i)] : HasPerm 𝔸 (Σ i, α i) where
+  perm π x := x.map id (λ _ ↦ (π ⬝ ·))
+
+omit [DecidableEq 𝔸] in
+theorem Sigma.perm_def {ι : Type*} {α : ι → Type*} [(i : ι) → HasPerm 𝔸 (α i)]
+    (π : Finperm 𝔸) (x : Σ i, α i) :
+    π ⬝ x = x.map id (λ _ ↦ (π ⬝ ·)) :=
+  rfl
+
+omit [DecidableEq 𝔸] in
+@[simp]
+theorem Sigma.perm_mk {ι : Type*} {α : ι → Type*} [(i : ι) → HasPerm 𝔸 (α i)]
+    (π : Finperm 𝔸) {i : ι} (x : α i) :
+    π ⬝ (⟨i, x⟩ : Σ i, α i) = ⟨i, π ⬝ x⟩ :=
+  rfl
+
+instance {ι : Type*} {α : ι → Type*} [(i : ι) → MulPerm 𝔸 (α i)] : MulPerm 𝔸 (Σ i, α i) where
+  one_perm := by
+    rintro ⟨i, x⟩
+    rw [Sigma.perm_mk, one_perm]
+  mul_perm := by
+    rintro π₁ π₂ ⟨i, x⟩
+    rw [Sigma.perm_mk, mul_perm]
+    rfl
+
+theorem Sigma.mk_equivariant {ι : Type*} {α : ι → Type*} [(i : ι) → MulPerm 𝔸 (α i)] (i : ι) :
+    Equivariant 𝔸 (mk i : α i → Σ j, α j) := by
+  intro π
+  ext x : 1
+  rw [Function.perm_def, perm_mk, perm_inv_perm]
+
+theorem Sigma.supports_mk {ι : Type*} {α : ι → Type*} [(i : ι) → MulPerm 𝔸 (α i)]
+    {i : ι} {x : α i} {s : Finset 𝔸} (hs : Supports s x) :
+    Supports s (⟨i, x⟩ : Σ i, α i) :=
+  hs.map _ (mk_equivariant i)
+
+instance [Infinite 𝔸] {ι : Type*} {α : ι → Type*} [(i : ι) → Nominal 𝔸 (α i)] :
+    Nominal 𝔸 (Σ i, α i) where
+  supported := by
+    rintro ⟨i, x⟩
+    exact ⟨_, Sigma.supports_mk (Nominal.supp_supports 𝔸 x)⟩
+
+/-!
 # Equalisers
 -/
 
@@ -464,24 +531,18 @@ theorem factor_equivariant {f g : α → β} {hf : Equivariant 𝔸 f} {hg : Equ
 end Nominal.Equaliser
 
 /-!
-# Initial and terminal object
+# Coequalisers
 -/
 
-instance : MulPerm 𝔸 Unit where
-  perm _ := id
-  one_perm _ := rfl
-  mul_perm _ _ _ := rfl
+def Nominal.Coequaliser {α β : Type*} [MulPerm 𝔸 α] [MulPerm 𝔸 β]
+    (f g : α → β) (_hf : Equivariant 𝔸 f) (_hg : Equivariant 𝔸 g) :=
+  Function.Coequalizer f g
 
-instance : Nominal 𝔸 Unit where
-  supported _ := ⟨∅, λ _ _ ↦ rfl⟩
+namespace Nominal.Coequaliser
 
-instance : MulPerm 𝔸 Empty where
-  perm _ := id
-  one_perm _ := rfl
-  mul_perm _ _ _ := rfl
 
-instance : Nominal 𝔸 Empty where
-  supported _ := ⟨∅, λ _ _ ↦ rfl⟩
+
+end Nominal.Coequaliser
 
 /-!
 # Coreflection

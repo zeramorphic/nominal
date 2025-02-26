@@ -44,17 +44,20 @@ class SepMonoid (𝔸 : Type*) [DecidableEq 𝔸] [Infinite 𝔸] (α : Type*) [
     sepMul (x.first sepMul sepMul_equivariant) =
     sepMul ((assoc α α α x).second sepMul sepMul_equivariant)
 
-instance {𝔸 : Type*} [DecidableEq 𝔸] [Infinite 𝔸] : SepMonoid 𝔸 (Finset 𝔸) where
+instance {𝔸 : Type*} [DecidableEq 𝔸] [Infinite 𝔸] {α : Type*} [DecidableEq α] [Nominal 𝔸 α] :
+    SepMonoid 𝔸 (Finset α) where
   sepMul x := x.fst ∪ x.snd
   sepMul_equivariant := by
     intro π
     ext x a
-    simp only [Function.perm_def, perm_fst, perm_snd, Finset.mem_perm, perm_name_eq,
-      Finset.mem_union, _root_.inv_inv, apply_inv_self]
+    simp only [Function.perm_def, perm_fst, perm_snd, Finset.mem_perm, Finset.mem_union,
+      _root_.inv_inv, perm_inv_perm]
   sepMul_strong := by
     apply strongMap_of_supp_eq_supp
     intro x
-    simp only [Finset.names_supp_eq, supp_eq]
+    ext a
+    simp only [Finset.supp_eq, supp_eq]
+    aesop
   sepUnit := ∅
   sepUnit_equivariant := by intro; rfl
   sepUnit_sepMul x := by simp only [leftInj, Finset.empty_union]
