@@ -464,7 +464,7 @@ def Nominal.Equaliser {α β : Type*} [MulPerm 𝔸 α] [MulPerm 𝔸 β]
 namespace Nominal.Equaliser
 
 variable {α β : Type*} [MulPerm 𝔸 α] [MulPerm 𝔸 β]
-    {f g : α → β} {hf : Equivariant 𝔸 f} {hg : Equivariant 𝔸 g}
+  {f g : α → β} {hf : Equivariant 𝔸 f} {hg : Equivariant 𝔸 g}
 
 protected def val (x : Equaliser f g hf hg) : α :=
   Subtype.val x
@@ -540,7 +540,62 @@ def Nominal.Coequaliser {α β : Type*} [MulPerm 𝔸 α] [MulPerm 𝔸 β]
 
 namespace Nominal.Coequaliser
 
+variable {α β : Type*} [MulPerm 𝔸 α] [MulPerm 𝔸 β]
+  {f g : α → β} {hf : Equivariant 𝔸 f} {hg : Equivariant 𝔸 g}
 
+protected def mk (x : β) : Coequaliser f g hf hg :=
+  Function.Coequalizer.mk f g x
+
+theorem mk_surjective : Function.Surjective (.mk : β → Coequaliser f g hf hg) :=
+  Function.Coequalizer.mk_surjective f g
+
+instance : HasPerm 𝔸 (Coequaliser f g hf hg) where
+  perm π := Function.Coequalizer.desc f g (λ x ↦ .mk (π ⬝ x))
+    (by
+      ext x
+      simp only [Function.comp_apply, apply_perm_eq hf, apply_perm_eq hg]
+      exact Function.Coequalizer.condition _ _ _)
+
+@[simp]
+theorem perm_mk (π : Finperm 𝔸) (x : β) :
+    π ⬝ (.mk x : Coequaliser f g hf hg) = .mk (π ⬝ x) :=
+  rfl
+
+instance : MulPerm 𝔸 (Coequaliser f g hf hg) where
+  one_perm x := by
+    obtain ⟨x, rfl⟩ := mk_surjective x
+    rw [perm_mk, one_perm]
+  mul_perm π₁ π₂ x := by
+    obtain ⟨x, rfl⟩ := mk_surjective x
+    rw [perm_mk, mul_perm]
+    rfl
+
+theorem mk_equivariant : Equivariant 𝔸 (.mk : β → Coequaliser f g hf hg) := by
+  intro π
+  ext x
+  simp only [Function.perm_def, perm_mk, perm_inv_perm]
+
+instance {α β : Type*} [MulPerm 𝔸 α] [Nominal 𝔸 β]
+    {f g : α → β} {hf : Equivariant 𝔸 f} {hg : Equivariant 𝔸 g}
+    [Infinite 𝔸] : Nominal 𝔸 (Coequaliser f g hf hg) where
+  supported x := by
+    obtain ⟨x, rfl⟩ := mk_surjective x
+    exact ⟨_, (Nominal.supp_supports 𝔸 x).map _ mk_equivariant⟩
+
+def factor (f g : α → β) (hf : Equivariant 𝔸 f) (hg : Equivariant 𝔸 g)
+    {γ : Type*} [MulPerm 𝔸 γ] (h : β → γ) (hfh : ∀ x, h (f x) = h (g x)) :
+    Coequaliser f g hf hg → γ :=
+  Function.Coequalizer.desc f g h (funext hfh)
+
+theorem factor_equivariant {f g : α → β} {hf : Equivariant 𝔸 f} {hg : Equivariant 𝔸 g}
+    {γ : Type*} [MulPerm 𝔸 γ] {h : β → γ} {hfh : ∀ x, h (f x) = h (g x)}
+    (hh : Equivariant 𝔸 h) :
+    Equivariant 𝔸 (factor f g hf hg h hfh) := by
+  intro π
+  ext x
+  obtain ⟨x, rfl⟩ := mk_surjective x
+  rw [Function.perm_def, factor, perm_mk, Coequaliser.mk, Coequaliser.mk,
+    Function.Coequalizer.desc_mk, Function.Coequalizer.desc_mk, apply_perm_eq hh, perm_inv_perm]
 
 end Nominal.Coequaliser
 
