@@ -411,12 +411,12 @@ instance : Nominal 𝔸 Empty where
 # Sigma types
 -/
 
-instance {ι : Type*} {α : ι → Type*} [(i : ι) → HasPerm 𝔸 (α i)] : HasPerm 𝔸 (Σ i, α i) where
+instance {ι : Type*} {α : ι → Type*} [(i : ι) → HasPerm 𝔸 (α i)] : HasPerm 𝔸 ((i : ι) × α i) where
   perm π x := x.map id (λ _ ↦ (π ⬝ ·))
 
 omit [DecidableEq 𝔸] in
 theorem Sigma.perm_def {ι : Type*} {α : ι → Type*} [(i : ι) → HasPerm 𝔸 (α i)]
-    (π : Finperm 𝔸) (x : Σ i, α i) :
+    (π : Finperm 𝔸) (x : (i : ι) × α i) :
     π ⬝ x = x.map id (λ _ ↦ (π ⬝ ·)) :=
   rfl
 
@@ -424,10 +424,24 @@ omit [DecidableEq 𝔸] in
 @[simp]
 theorem Sigma.perm_mk {ι : Type*} {α : ι → Type*} [(i : ι) → HasPerm 𝔸 (α i)]
     (π : Finperm 𝔸) {i : ι} (x : α i) :
-    π ⬝ (⟨i, x⟩ : Σ i, α i) = ⟨i, π ⬝ x⟩ :=
+    π ⬝ (⟨i, x⟩ : (i : ι) × α i) = ⟨i, π ⬝ x⟩ :=
   rfl
 
-instance {ι : Type*} {α : ι → Type*} [(i : ι) → MulPerm 𝔸 (α i)] : MulPerm 𝔸 (Σ i, α i) where
+omit [DecidableEq 𝔸] in
+@[simp]
+theorem Sigma.perm_fst {ι : Type*} {α : ι → Type*} [(i : ι) → HasPerm 𝔸 (α i)]
+    (π : Finperm 𝔸) (x : (i : ι) × α i) :
+    (π ⬝ x).fst = x.fst :=
+  rfl
+
+omit [DecidableEq 𝔸] in
+@[simp]
+theorem Sigma.perm_snd {ι : Type*} {α : ι → Type*} [(i : ι) → HasPerm 𝔸 (α i)]
+    (π : Finperm 𝔸) (x : (i : ι) × α i) :
+    (π ⬝ x).snd = π ⬝ x.snd :=
+  rfl
+
+instance {ι : Type*} {α : ι → Type*} [(i : ι) → MulPerm 𝔸 (α i)] : MulPerm 𝔸 ((i : ι) × α i) where
   one_perm := by
     rintro ⟨i, x⟩
     rw [Sigma.perm_mk, one_perm]
@@ -437,18 +451,35 @@ instance {ι : Type*} {α : ι → Type*} [(i : ι) → MulPerm 𝔸 (α i)] : M
     rfl
 
 theorem Sigma.mk_equivariant {ι : Type*} {α : ι → Type*} [(i : ι) → MulPerm 𝔸 (α i)] (i : ι) :
-    Equivariant 𝔸 (mk i : α i → Σ j, α j) := by
+    Equivariant 𝔸 (mk i : α i → (j : ι) × α j) := by
   intro π
   ext x : 1
   rw [Function.perm_def, perm_mk, perm_inv_perm]
 
+/-- Note that we can't directly say that `snd` is equivariant, as it is a dependent type. -/
+theorem Sigma.supports_snd {ι : Type*} {α : ι → Type*}
+    [(i : ι) → MulPerm 𝔸 (α i)] {s : Finset 𝔸} {x : (i : ι) × α i}
+    (h : Supports s x) :
+    Supports s x.snd := by
+  intro π hπ
+  rw [← perm_snd]
+  congr 1
+  exact h π hπ
+
+theorem Sigma.snd_finitelySupported {ι : Type*} {α : ι → Type*}
+    [(i : ι) → MulPerm 𝔸 (α i)] {x : (i : ι) × α i}
+    (h : FinitelySupported 𝔸 x) :
+    FinitelySupported 𝔸 x.snd := by
+  obtain ⟨s, hs⟩ := h
+  exact ⟨s, supports_snd hs⟩
+
 theorem Sigma.supports_mk {ι : Type*} {α : ι → Type*} [(i : ι) → MulPerm 𝔸 (α i)]
     {i : ι} {x : α i} {s : Finset 𝔸} (hs : Supports s x) :
-    Supports s (⟨i, x⟩ : Σ i, α i) :=
+    Supports s (⟨i, x⟩ : (i : ι) × α i) :=
   hs.map _ (mk_equivariant i)
 
 instance [Infinite 𝔸] {ι : Type*} {α : ι → Type*} [(i : ι) → Nominal 𝔸 (α i)] :
-    Nominal 𝔸 (Σ i, α i) where
+    Nominal 𝔸 ((i : ι) × α i) where
   supported := by
     rintro ⟨i, x⟩
     exact ⟨_, Sigma.supports_mk (Nominal.supp_supports 𝔸 x)⟩
@@ -545,6 +576,9 @@ variable {α β : Type*} [MulPerm 𝔸 α] [MulPerm 𝔸 β]
 
 protected def mk (x : β) : Coequaliser f g hf hg :=
   Function.Coequalizer.mk f g x
+
+theorem condition (x : α) : (.mk (f x) : Coequaliser f g hf hg) = .mk (g x) :=
+  Function.Coequalizer.condition _ _ x
 
 theorem mk_surjective : Function.Surjective (.mk : β → Coequaliser f g hf hg) :=
   Function.Coequalizer.mk_surjective f g
