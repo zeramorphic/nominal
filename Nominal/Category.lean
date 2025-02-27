@@ -266,16 +266,16 @@ instance Nominal.hasCoproducts.{v} [Infinite 𝔸] :
     HasCoproducts.{v} (Bundled.{v} (Nominal 𝔸)) :=
   λ _ ↦ ⟨λ K ↦ ⟨Nominal.coproductCocone K, Nominal.coproductCocone_isColimit K⟩⟩
 
-def Nominal.coequaliserCocone [Infinite 𝔸] (F : WalkingParallelPair ⥤ Bundled (Nominal 𝔸)) :
-    Cocone F where
-  pt := ⟨Coequaliser (F.map .left) (F.map .right) (F.map .left).prop (F.map .right).prop,
+def Nominal.coequaliserCocone [Infinite 𝔸] (K : WalkingParallelPair ⥤ Bundled (Nominal 𝔸)) :
+    Cocone K where
+  pt := ⟨Coequaliser (K.map .left) (K.map .right) (K.map .left).prop (K.map .right).prop,
     inferInstance⟩
   ι := {
     app j := match j with
-      | .zero => ⟨Coequaliser.mk (hf := (F.map .left).prop) (hg := (F.map .right).prop) ∘
-          F.map .right,
-        Coequaliser.mk_equivariant.comp (F.map .right).prop⟩
-      | .one => ⟨Coequaliser.mk (hf := (F.map .left).prop) (hg := (F.map .right).prop),
+      | .zero => ⟨Coequaliser.mk (hf := (K.map .left).prop) (hg := (K.map .right).prop) ∘
+          K.map .right,
+        Coequaliser.mk_equivariant.comp (K.map .right).prop⟩
+      | .one => ⟨Coequaliser.mk (hf := (K.map .left).prop) (hg := (K.map .right).prop),
         Coequaliser.mk_equivariant⟩
     naturality j k h := by
       ext x
@@ -291,16 +291,23 @@ def Nominal.coequaliserCocone [Infinite 𝔸] (F : WalkingParallelPair ⥤ Bundl
   }
 
 def Nominal.coequaliserCocone_isColimit [Infinite 𝔸]
-    (F : WalkingParallelPair ⥤ Bundled (Nominal 𝔸)) :
-    IsColimit (coequaliserCocone F) where
+    (K : WalkingParallelPair ⥤ Bundled (Nominal 𝔸)) :
+    IsColimit (coequaliserCocone K) where
   desc s := ⟨Coequaliser.factor
-    (F.map .left) (F.map .right) (F.map .left).prop (F.map .right).prop
+    (K.map .left) (K.map .right) (K.map .left).prop (K.map .right).prop
     (s.ι.app _)
     λ x ↦ (congr_arg (· x) (s.ι.naturality .left)).trans
       (congr_arg (· x) (s.ι.naturality .right)).symm,
     Coequaliser.factor_equivariant (s.ι.app .one).prop⟩
-  fac := sorry
-  uniq := sorry
+  fac s j := by
+    ext x
+    cases j
+    case zero => exact congr_arg (· x) (s.ι.naturality .right)
+    case one => rfl
+  uniq s m h := by
+    ext x
+    obtain ⟨x, rfl⟩ := Coequaliser.mk_surjective (hf := (K.map .left).prop) (hg := (K.map .right).prop) x
+    exact congr_arg (· x) (h .one)
 
 instance Nominal.hasCoequalisers [Infinite 𝔸] :
     HasCoequalizers (Bundled (Nominal 𝔸)) :=
@@ -321,17 +328,156 @@ instance Nominal.hasColimits.{u, v} (𝔸 : Type u) [DecidableEq 𝔸] [Infinite
     HasColimitsOfSize.{v, v} (Bundled.{v} (Nominal 𝔸)) :=
   has_colimits_of_hasCoequalizers_and_coproducts
 
-instance nominalInclusion_preservesEqualisers.{u, v} (𝔸 : Type v) [DecidableEq 𝔸] :
-    PreservesLimitsOfShape (C := Bundled (Nominal.{u + 1} 𝔸)) (D := Bundled (MulPerm.{u + 1} 𝔸))
-      WalkingParallelPair (nominalInclusion 𝔸) :=
-  sorry
+def Nominal.pairCone.{v} (K : Discrete WalkingPair ⥤ Bundled.{v} (Nominal 𝔸)) :
+    Cone K where
+  pt := ⟨K.obj ⟨.left⟩ × K.obj ⟨.right⟩, inferInstance⟩
+  π := {
+    app j := match j with
+      | ⟨.left⟩ => ⟨Prod.fst, Prod.fst_equivariant⟩
+      | ⟨.right⟩ => ⟨Prod.snd, Prod.snd_equivariant⟩
+    naturality j k f := by
+      cases Discrete.ext (Discrete.eq_of_hom f)
+      simp only [const_obj_obj, Discrete.functor_map_id, Category.id_comp, Category.comp_id]
+  }
 
-instance nominalInclusion_preservesFiniteProducts.{u, v} (𝔸 : Type v) [DecidableEq 𝔸] :
-    PreservesFiniteProducts (C := Bundled (Nominal.{u + 1} 𝔸)) (D := Bundled (MulPerm.{u + 1} 𝔸))
-      (nominalInclusion 𝔸) :=
-  sorry
+def Nominal.pairCone_isLimit (K : Discrete WalkingPair ⥤ Bundled (Nominal 𝔸)) :
+    IsLimit (pairCone K) where
+  lift s := ⟨λ x ↦ ⟨s.π.app ⟨.left⟩ x, s.π.app ⟨.right⟩ x⟩, by
+    intro π
+    ext x
+    apply Prod.ext
+    · apply (apply_perm_eq (s.π.app ⟨.left⟩).prop π _).trans
+      rw [perm_inv_perm]
+      rfl
+    · apply (apply_perm_eq (s.π.app ⟨.right⟩).prop π _).trans
+      rw [perm_inv_perm]
+      rfl⟩
+  fac s j := by
+    obtain ⟨j | j⟩ := j
+    case left => rfl
+    case right => rfl
+  uniq s m h := by
+    ext x
+    apply Prod.ext
+    · exact congr_arg (· x) (h ⟨.left⟩)
+    · exact congr_arg (· x) (h ⟨.right⟩)
 
-instance nominalInclusion_preservesFiniteLimits.{u, v} (𝔸 : Type v) [DecidableEq 𝔸] :
-    PreservesFiniteLimits (C := Bundled (Nominal.{u + 1} 𝔸)) (D := Bundled (MulPerm.{u + 1} 𝔸))
-      (nominalInclusion 𝔸) :=
+def Nominal.nominalInclusion_pairCone_isLimit (K : Discrete WalkingPair ⥤ Bundled (Nominal 𝔸)) :
+    IsLimit ((nominalInclusion 𝔸).mapCone (pairCone K)) where
+  lift s := ⟨λ x ↦ ⟨s.π.app ⟨.left⟩ x, s.π.app ⟨.right⟩ x⟩, by
+    intro π
+    ext x
+    apply Prod.ext
+    · apply (apply_perm_eq (s.π.app ⟨.left⟩).prop π _).trans
+      rw [perm_inv_perm]
+      rfl
+    · apply (apply_perm_eq (s.π.app ⟨.right⟩).prop π _).trans
+      rw [perm_inv_perm]
+      rfl⟩
+  fac s j := by
+    obtain ⟨j | j⟩ := j
+    case left => rfl
+    case right => rfl
+  uniq s m h := by
+    ext x
+    apply Prod.ext
+    · exact congr_arg (· x) (h ⟨.left⟩)
+    · exact congr_arg (· x) (h ⟨.right⟩)
+
+instance nominalInclusion_preservesBinaryProducts.{u, v} (𝔸 : Type u) [DecidableEq 𝔸] :
+    PreservesLimitsOfShape (Discrete WalkingPair) (nominalInclusion.{v} 𝔸) :=
+  ⟨λ {K} ↦ preservesLimit_of_preserves_limit_cone
+    (Nominal.pairCone_isLimit K) (Nominal.nominalInclusion_pairCone_isLimit K)⟩
+
+def Nominal.emptyCone.{v} (K : Discrete PEmpty ⥤ Bundled.{v} (Nominal 𝔸)) :
+    Cone K where
+  pt := ⟨PUnit, inferInstance⟩
+  π := {
+    app j := j.as.elim
+  }
+
+def Nominal.emptyCone_isLimit.{v} (K : Discrete PEmpty ⥤ Bundled.{v} (Nominal 𝔸)) :
+    IsLimit (emptyCone K) where
+  lift s := ⟨λ _ ↦ PUnit.unit, λ _ ↦ rfl⟩
+
+def Nominal.nominalInclusion_emptyCone_isLimit.{v} (K : Discrete PEmpty ⥤ Bundled.{v} (Nominal 𝔸)) :
+    IsLimit ((nominalInclusion 𝔸).mapCone (emptyCone K)) where
+  lift s := ⟨λ _ ↦ PUnit.unit, λ _ ↦ rfl⟩
+
+instance nominalInclusion_preservesEmpty.{u, v} (𝔸 : Type u) [DecidableEq 𝔸] :
+    PreservesLimitsOfShape (Discrete PEmpty) (nominalInclusion.{v} 𝔸) :=
+  ⟨λ {K} ↦ preservesLimit_of_preserves_limit_cone
+    (Nominal.emptyCone_isLimit K) (Nominal.nominalInclusion_emptyCone_isLimit K)⟩
+
+instance nominalInclusion_preservesFiniteProducts.{u, v} (𝔸 : Type u) [DecidableEq 𝔸] :
+    PreservesFiniteProducts.{v} (nominalInclusion 𝔸) :=
+  ⟨λ _ ↦ preservesShape_fin_of_preserves_binary_and_terminal _ _⟩
+
+def Nominal.equaliserCone.{v} [Infinite 𝔸] (K : WalkingParallelPair ⥤ Bundled.{v} (Nominal 𝔸)) :
+    Cone K where
+  pt := ⟨Equaliser (K.map .left) (K.map .right) (K.map .left).prop (K.map .right).prop,
+    inferInstance⟩
+  π := {
+    app j := match j with
+      | .zero => ⟨Equaliser.val (hf := (K.map .left).prop) (hg := (K.map .right).prop),
+          Equaliser.val_equivariant⟩
+      | .one => ⟨K.map .left ∘ Equaliser.val
+            (hf := (K.map .left).prop) (hg := (K.map .right).prop),
+          (K.map .left).prop.comp Equaliser.val_equivariant⟩
+    naturality j k h := by
+      ext x
+      cases h
+      case left => rfl
+      case right =>
+        simp only [ConcreteCategory.hom, id_eq, const_obj_obj, const_obj_map, Category.id_comp,
+          Function.comp_apply]
+        exact Subtype.prop x
+      case id =>
+        simp only [ConcreteCategory.hom, id_eq, const_obj_obj, walkingParallelPairHom_id,
+          CategoryTheory.Functor.map_id, Category.id_comp, const_obj_map, Category.comp_id]
+  }
+
+def Nominal.equaliserCone_isLimit.{v} [Infinite 𝔸] (K : WalkingParallelPair ⥤ Bundled.{v} (Nominal 𝔸)) :
+    IsLimit (equaliserCone K) where
+  lift s := ⟨Equaliser.factor
+    (K.map .left) (K.map .right) (K.map .left).prop (K.map .right).prop
+    (s.π.app _)
+    λ x ↦ (congr_arg (· x) (s.π.naturality .left)).symm.trans
+      (congr_arg (· x) (s.π.naturality .right)),
+    Equaliser.factor_equivariant (s.π.app .zero).prop⟩
+  fac s j := by
+    ext x
+    cases j
+    case zero => rfl
+    case one => exact (congr_arg (· x) (s.π.naturality .left)).symm
+  uniq s m h := by
+    ext x
+    have := congr_arg (· x) (h .zero)
+    exact Subtype.coe_injective this
+
+def Nominal.nominalInclusion_equaliserCone_isLimit.{v} [Infinite 𝔸] (K : WalkingParallelPair ⥤ Bundled.{v} (Nominal 𝔸)) :
+    IsLimit ((nominalInclusion 𝔸).mapCone (equaliserCone K)) where
+  lift s := ⟨Equaliser.factor
+    (K.map .left) (K.map .right) (K.map .left).prop (K.map .right).prop
+    (s.π.app _)
+    λ x ↦ (congr_arg (· x) (s.π.naturality .left)).symm.trans
+      (congr_arg (· x) (s.π.naturality .right)),
+    Equaliser.factor_equivariant (s.π.app .zero).prop⟩
+  fac s j := by
+    ext x
+    cases j
+    case zero => rfl
+    case one => exact (congr_arg (· x) (s.π.naturality .left)).symm
+  uniq s m h := by
+    ext x
+    have := congr_arg (· x) (h .zero)
+    exact Subtype.coe_injective this
+
+instance nominalInclusion_preservesEqualisers.{u, v} (𝔸 : Type u) [DecidableEq 𝔸] [Infinite 𝔸] :
+    PreservesLimitsOfShape WalkingParallelPair (nominalInclusion.{v} 𝔸) :=
+  ⟨λ {K} ↦ preservesLimit_of_preserves_limit_cone
+    (Nominal.equaliserCone_isLimit K) (Nominal.nominalInclusion_equaliserCone_isLimit K)⟩
+
+instance nominalInclusion_preservesFiniteLimits.{u, v} (𝔸 : Type u) [DecidableEq 𝔸] [Infinite 𝔸] :
+    PreservesFiniteLimits.{v} (nominalInclusion 𝔸) :=
   preservesFiniteLimits_of_preservesEqualizers_and_finiteProducts _

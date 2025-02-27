@@ -399,12 +399,28 @@ instance : MulPerm 𝔸 Unit where
 instance : Nominal 𝔸 Unit where
   supported _ := ⟨∅, λ _ _ ↦ rfl⟩
 
+instance : MulPerm 𝔸 PUnit where
+  perm _ := id
+  one_perm _ := rfl
+  mul_perm _ _ _ := rfl
+
+instance : Nominal 𝔸 PUnit where
+  supported _ := ⟨∅, λ _ _ ↦ rfl⟩
+
 instance : MulPerm 𝔸 Empty where
   perm _ := id
   one_perm _ := rfl
   mul_perm _ _ _ := rfl
 
 instance : Nominal 𝔸 Empty where
+  supported _ := ⟨∅, λ _ _ ↦ rfl⟩
+
+instance : MulPerm 𝔸 PEmpty where
+  perm _ := id
+  one_perm _ := rfl
+  mul_perm _ _ _ := rfl
+
+instance : Nominal 𝔸 PEmpty where
   supported _ := ⟨∅, λ _ _ ↦ rfl⟩
 
 /-!
