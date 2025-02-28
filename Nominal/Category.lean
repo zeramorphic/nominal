@@ -148,11 +148,23 @@ def mulPermMap'.{u} (𝔸 : Type*) [DecidableEq 𝔸] :
   }
 
 def mulPermEquiv.{u} (𝔸 : Type*) [DecidableEq 𝔸] :
-    Bundled (MulPerm.{u + 1} 𝔸) ≌ (SingleObj (Finperm 𝔸) ⥤ Type u) where
+    Bundled (MulPerm.{u + 1} 𝔸) ≌ SingleObj (Finperm 𝔸) ⥤ Type u where
   functor := mulPermMap 𝔸
   inverse := mulPermMap' 𝔸
   unitIso := Iso.refl _
   counitIso := Iso.refl _
+
+def Nominal.discrete.{u} (𝔸 : Type*) [DecidableEq 𝔸] :
+    Type u ⥤ Bundled.{u} (Nominal 𝔸) where
+  obj α := Nominal.of (Discrete 𝔸 α)
+  map {X Y} f := ⟨f, λ _ ↦ rfl⟩
+
+def discreteFullyFaithful : FullyFaithful (Nominal.discrete 𝔸) where
+  preimage f := f.val
+
+instance : Faithful (Nominal.discrete 𝔸) := discreteFullyFaithful.faithful
+
+instance : Full (Nominal.discrete 𝔸) := discreteFullyFaithful.full
 
 /-!
 # Limits and colimits
@@ -438,7 +450,8 @@ def Nominal.equaliserCone.{v} [Infinite 𝔸] (K : WalkingParallelPair ⥤ Bundl
           CategoryTheory.Functor.map_id, Category.id_comp, const_obj_map, Category.comp_id]
   }
 
-def Nominal.equaliserCone_isLimit.{v} [Infinite 𝔸] (K : WalkingParallelPair ⥤ Bundled.{v} (Nominal 𝔸)) :
+def Nominal.equaliserCone_isLimit.{v} [Infinite 𝔸]
+    (K : WalkingParallelPair ⥤ Bundled.{v} (Nominal 𝔸)) :
     IsLimit (equaliserCone K) where
   lift s := ⟨Equaliser.factor
     (K.map .left) (K.map .right) (K.map .left).prop (K.map .right).prop
@@ -447,16 +460,16 @@ def Nominal.equaliserCone_isLimit.{v} [Infinite 𝔸] (K : WalkingParallelPair �
       (congr_arg (· x) (s.π.naturality .right)),
     Equaliser.factor_equivariant (s.π.app .zero).prop⟩
   fac s j := by
-    ext x
     cases j
     case zero => rfl
-    case one => exact (congr_arg (· x) (s.π.naturality .left)).symm
+    case one => exact s.w .left
   uniq s m h := by
     ext x
     have := congr_arg (· x) (h .zero)
     exact Subtype.coe_injective this
 
-def Nominal.nominalInclusion_equaliserCone_isLimit.{v} [Infinite 𝔸] (K : WalkingParallelPair ⥤ Bundled.{v} (Nominal 𝔸)) :
+def Nominal.nominalInclusion_equaliserCone_isLimit.{v} [Infinite 𝔸]
+    (K : WalkingParallelPair ⥤ Bundled.{v} (Nominal 𝔸)) :
     IsLimit ((nominalInclusion 𝔸).mapCone (equaliserCone K)) where
   lift s := ⟨Equaliser.factor
     (K.map .left) (K.map .right) (K.map .left).prop (K.map .right).prop
@@ -465,10 +478,9 @@ def Nominal.nominalInclusion_equaliserCone_isLimit.{v} [Infinite 𝔸] (K : Walk
       (congr_arg (· x) (s.π.naturality .right)),
     Equaliser.factor_equivariant (s.π.app .zero).prop⟩
   fac s j := by
-    ext x
     cases j
     case zero => rfl
-    case one => exact (congr_arg (· x) (s.π.naturality .left)).symm
+    case one => exact s.w .left
   uniq s m h := by
     ext x
     have := congr_arg (· x) (h .zero)
@@ -482,6 +494,10 @@ instance nominalInclusion_preservesEqualisers.{u, v} (𝔸 : Type u) [DecidableE
 instance nominalInclusion_preservesFiniteLimits.{u, v} (𝔸 : Type u) [DecidableEq 𝔸] [Infinite 𝔸] :
     PreservesFiniteLimits.{v} (nominalInclusion 𝔸) :=
   preservesFiniteLimits_of_preservesEqualizers_and_finiteProducts _
+
+/-!
+## The forgetful functor `Nom → Type`
+-/
 
 def Nominal.forget_pairCone_isLimit.{v} (K : Discrete WalkingPair ⥤ Bundled.{v} (Nominal 𝔸)) :
     IsLimit ((forget (Bundled.{v} (Nominal 𝔸))).mapCone (pairCone K)) where
@@ -514,9 +530,19 @@ instance Nominal.forget_preservesFiniteProducts.{u, v} (𝔸 : Type u) [Decidabl
     PreservesFiniteProducts.{v} (forget (Bundled.{v} (Nominal 𝔸))) :=
   ⟨λ _ ↦ preservesShape_fin_of_preserves_binary_and_terminal _ _⟩
 
-def Nominal.forget_equaliserCone_isLimit.{v} [Infinite 𝔸] (K : WalkingParallelPair ⥤ Bundled.{v} (Nominal 𝔸)) :
-    IsLimit ((forget (Bundled.{v} (Nominal 𝔸))).mapCone (equaliserCone K)) :=
-  sorry
+def Nominal.forget_equaliserCone_isLimit.{v} [Infinite 𝔸]
+    (K : WalkingParallelPair ⥤ Bundled.{v} (Nominal 𝔸)) :
+    IsLimit ((forget (Bundled.{v} (Nominal 𝔸))).mapCone (equaliserCone K)) where
+  lift s x :=
+    ⟨s.π.app .zero x, congr_arg (· x) ((s.π.naturality .left).symm.trans (s.π.naturality .right))⟩
+  fac s j := by
+    cases j
+    case zero => rfl
+    case one => exact s.w .left
+  uniq s m h := by
+    ext x
+    have := congr_arg (· x) (h .zero)
+    exact Equaliser.val_injective (hf := (K.map .left).prop) (hg := (K.map .right).prop) this
 
 instance Nominal.forget_preservesEqualisers.{u, v} (𝔸 : Type u) [DecidableEq 𝔸] [Infinite 𝔸] :
     PreservesLimitsOfShape WalkingParallelPair (forget (Bundled.{v} (Nominal 𝔸))) :=
@@ -534,6 +560,11 @@ instance Nominal.forget_preservesFiniteLimits.{u, v} (𝔸 : Type u) [DecidableE
 theorem Nominal.mono_iff_injective [Infinite 𝔸] {α β : Bundled (Nominal 𝔸)} (f : α ⟶ β) :
     Mono f ↔ Function.Injective f :=
   ConcreteCategory.mono_iff_injective_of_preservesPullback f
+
+theorem Nominal.epi_iff_surjective [Infinite 𝔸] {α β : Bundled (Nominal 𝔸)} (f : α ⟶ β) :
+    Epi f ↔ Function.Surjective f :=
+  sorry
+  -- ConcreteCategory.epi_iff_surjective_of_preservesPushout f
 
 /-!
 # Well-poweredness
