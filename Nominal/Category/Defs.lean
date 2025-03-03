@@ -63,6 +63,9 @@ theorem MulPerm.forget_hom {α β : Bundled (MulPerm 𝔸)} (f : α ⟶ β) :
     ConcreteCategory.hom f = f :=
   rfl
 
+instance {α : Bundled (MulPerm 𝔸)} : MulPerm 𝔸 ((forget (Bundled (MulPerm 𝔸))).obj α) :=
+  α.str
+
 instance : Category (Bundled (Nominal 𝔸)) where
   Hom α β := {f : α → β // Equivariant 𝔸 f}
   id _ := ⟨id, id_equivariant⟩
@@ -76,6 +79,9 @@ instance : ConcreteCategory (Bundled (Nominal 𝔸)) (λ α β ↦ {f : α → �
 theorem Nominal.forget_hom {α β : Bundled (Nominal 𝔸)} (f : α ⟶ β) :
     ConcreteCategory.hom f = f :=
   rfl
+
+instance {α : Bundled (Nominal 𝔸)} : Nominal 𝔸 ((forget (Bundled (Nominal 𝔸))).obj α) :=
+  α.str
 
 /-! We can identify the `Finperm 𝔸`-types with functors from
 the delooping of `Finperm 𝔸` into `Type u`. -/
