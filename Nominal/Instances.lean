@@ -240,6 +240,96 @@ theorem Part.fresh_of_not_dom {α β : Type*} [Nominal 𝔸 α]
   exact Finset.disjoint_empty_right _
 
 /-!
+# Coreflection
+
+We show that the category of nominal sets is coreflective in the category of `Finperm 𝔸`-sets.
+-/
+
+/-- A finitely supported element of `α`. -/
+def FS (𝔸 : Type*) [DecidableEq 𝔸] (α : Type*) [MulPerm 𝔸 α] :=
+  {x : α // FinitelySupported 𝔸 x}
+
+def FS.val {α : Type*} [MulPerm 𝔸 α] (x : FS 𝔸 α) : α :=
+  Subtype.val x
+
+attribute [coe] FS.val
+
+instance {α : Type*} [MulPerm 𝔸 α] : CoeOut (FS 𝔸 α) α where
+  coe := FS.val
+
+theorem FS.prop {α : Type*} [MulPerm 𝔸 α] (x : FS 𝔸 α) : FinitelySupported 𝔸 (x : α) :=
+  Subtype.prop x
+
+@[ext]
+theorem FS.ext {α : Type*} [MulPerm 𝔸 α] {x y : FS 𝔸 α} (h : (x : α) = y) : x = y :=
+  Subtype.ext h
+
+theorem FS.val_injective {α : Type*} [MulPerm 𝔸 α] :
+    Function.Injective (FS.val : FS 𝔸 α → α) :=
+  Subtype.val_injective
+
+@[simp]
+theorem FS.val_mk {α : Type*} [MulPerm 𝔸 α] {x : α} {h : FinitelySupported 𝔸 x} :
+    ((⟨x, h⟩ : FS 𝔸 α) : α) = x :=
+  rfl
+
+@[simp]
+theorem FS.val_mk' {α : Type*} [MulPerm 𝔸 α] {x : α} {h : FinitelySupported 𝔸 x} :
+    FS.val (⟨x, h⟩ : {x : α // FinitelySupported 𝔸 x}) = x :=
+  rfl
+
+instance {α : Type*} [MulPerm 𝔸 α] : HasPerm 𝔸 (FS 𝔸 α) where
+  perm π x := ⟨π ⬝ (x : α), x.prop.perm π⟩
+
+@[simp]
+theorem FS.perm_coe {α : Type*} [MulPerm 𝔸 α] (x : FS 𝔸 α) (π : Finperm 𝔸) :
+    ((π ⬝ x : FS 𝔸 α) : α) = π ⬝ x :=
+  rfl
+
+instance {α : Type*} [MulPerm 𝔸 α] : MulPerm 𝔸 (FS 𝔸 α) where
+  one_perm _ := FS.ext (by rw [FS.perm_coe, one_perm])
+  mul_perm _ _ _ := FS.ext (by simp only [FS.perm_coe, mul_perm])
+
+theorem FS.val_equivariant {α : Type*} [MulPerm 𝔸 α] :
+    Equivariant 𝔸 (FS.val (𝔸 := 𝔸) (α := α)) := by
+  rw [Function.equivariant_iff]
+  intro π x
+  rfl
+
+instance {α : Type*} [MulPerm 𝔸 α] : Nominal 𝔸 (FS 𝔸 α) where
+  supported x := x.prop.of_map FS.val_injective FS.val_equivariant
+
+@[simp]
+theorem FS.supports_iff {α : Type*} [MulPerm 𝔸 α] (x : FS 𝔸 α) (s : Finset 𝔸) :
+    Supports s x ↔ Supports s (x : α) :=
+  ⟨λ h ↦ h.map val val_equivariant, λ h ↦ h.of_map val_injective val_equivariant⟩
+
+/-- The factorisation of an equivariant function from a nominal set through the finitely supported
+elements of its codomain. -/
+def Equivariant.toFS {α β : Type*} [Nominal 𝔸 α] [MulPerm 𝔸 β]
+    {f : α → β} (hf : Equivariant 𝔸 f) (x : α) : FS 𝔸 β :=
+  ⟨f x, (Nominal.supported x).map f hf⟩
+
+theorem Equivariant.toFS_equivariant {α β : Type*} [Nominal 𝔸 α] [MulPerm 𝔸 β]
+    {f : α → β} (hf : Equivariant 𝔸 f) :
+    Equivariant 𝔸 hf.toFS := by
+  intro π
+  ext x : 2
+  rw [Function.perm_def, Equivariant.toFS, FS.perm_coe, FS.val_mk', apply_perm_eq hf, perm_inv_perm]
+  rfl
+
+@[simp]
+protected theorem FS.supp_eq {α : Type*} [MulPerm 𝔸 α] (x : FS 𝔸 α) :
+    supp 𝔸 x = supp 𝔸 x.val := by
+  ext a
+  simp only [Nominal.mem_supp_iff, supports_iff, mem_supp_iff' _ x.prop]
+
+@[simp]
+theorem FS.fresh_iff {α β : Type*} [MulPerm 𝔸 α] [MulPerm 𝔸 β] (x : FS 𝔸 α) (y : β) :
+    y #[𝔸] x ↔ y #[𝔸] x.val := by
+  rw [fresh_def, fresh_def, FS.supp_eq]
+
+/-!
 # Binary coproducts
 -/
 
@@ -501,6 +591,57 @@ instance [Infinite 𝔸] {ι : Type*} {α : ι → Type*} [(i : ι) → Nominal 
     exact ⟨_, Sigma.supports_mk (Nominal.supp_supports 𝔸 x)⟩
 
 /-!
+# Product types
+-/
+
+/-- The pointwise product of nominal sets.
+This is, in general, not a nominal set. -/
+@[ext]
+structure PointProduct (𝔸 : Type*) [DecidableEq 𝔸]
+    {ι : Type*} (α : ι → Type*) [(i : ι) → HasPerm 𝔸 (α i)] where
+  pr i : α i
+
+instance {ι : Type*} {α : ι → Type*} [(i : ι) → HasPerm 𝔸 (α i)] :
+    HasPerm 𝔸 (PointProduct 𝔸 α) where
+  perm π x := ⟨λ i ↦ π ⬝ x.pr i⟩
+
+theorem PointProduct.perm_def {ι : Type*} {α : ι → Type*} [(i : ι) → HasPerm 𝔸 (α i)]
+    (x : PointProduct 𝔸 α) (π : Finperm 𝔸) :
+    π ⬝ x = ⟨λ i ↦ π ⬝ x.pr i⟩ :=
+  rfl
+
+@[simp]
+theorem PointProduct.perm_pr {ι : Type*} {α : ι → Type*} [(i : ι) → HasPerm 𝔸 (α i)]
+    (x : PointProduct 𝔸 α) (π : Finperm 𝔸) (i : ι) :
+    (π ⬝ x).pr i = π ⬝ x.pr i :=
+  rfl
+
+instance {ι : Type*} {α : ι → Type*} [(i : ι) → MulPerm 𝔸 (α i)] :
+    MulPerm 𝔸 (PointProduct 𝔸 α) where
+  one_perm x := PointProduct.ext (funext (λ i ↦ one_perm (x.pr i)))
+  mul_perm π₁ π₂ x := PointProduct.ext (funext (λ i ↦ mul_perm π₁ π₂ (x.pr i)))
+
+/-- The categorical product of nominal sets. -/
+def Product (𝔸 : Type*) [DecidableEq 𝔸]
+    {ι : Type*} (α : ι → Type*) [(i : ι) → MulPerm 𝔸 (α i)] :=
+  FS 𝔸 (PointProduct 𝔸 α)
+
+instance {ι : Type*} {α : ι → Type*} [(i : ι) → MulPerm 𝔸 (α i)] :
+    Nominal 𝔸 (Product 𝔸 α) :=
+  inferInstanceAs (Nominal 𝔸 (FS 𝔸 (PointProduct 𝔸 α)))
+
+def Product.pr {ι : Type*} {α : ι → Type*} [(i : ι) → MulPerm 𝔸 (α i)]
+    (i : ι) (x : Product 𝔸 α) : α i :=
+  x.val.pr i
+
+theorem Product.pr_equivariant {ι : Type*} {α : ι → Type*} [(i : ι) → MulPerm 𝔸 (α i)]
+    (i : ι) : Equivariant 𝔸 (pr i : Product 𝔸 α → α i) := by
+  intro π
+  ext x
+  rw [Function.perm_def, perm_eq_iff_eq_inv_perm]
+  rfl
+
+/-!
 # Equalisers
 -/
 
@@ -648,96 +789,6 @@ theorem factor_equivariant {f g : α → β} {hf : Equivariant 𝔸 f} {hg : Equ
     Function.Coequalizer.desc_mk, Function.Coequalizer.desc_mk, apply_perm_eq hh, perm_inv_perm]
 
 end Nominal.Coequaliser
-
-/-!
-# Coreflection
-
-We show that the category of nominal sets is coreflective in the category of `Finperm 𝔸`-sets.
--/
-
-/-- A finitely supported element of `α`. -/
-def FS (𝔸 : Type*) [DecidableEq 𝔸] (α : Type*) [MulPerm 𝔸 α] :=
-  {x : α // FinitelySupported 𝔸 x}
-
-def FS.val {α : Type*} [MulPerm 𝔸 α] (x : FS 𝔸 α) : α :=
-  Subtype.val x
-
-attribute [coe] FS.val
-
-instance {α : Type*} [MulPerm 𝔸 α] : CoeOut (FS 𝔸 α) α where
-  coe := FS.val
-
-theorem FS.prop {α : Type*} [MulPerm 𝔸 α] (x : FS 𝔸 α) : FinitelySupported 𝔸 (x : α) :=
-  Subtype.prop x
-
-@[ext]
-theorem FS.ext {α : Type*} [MulPerm 𝔸 α] {x y : FS 𝔸 α} (h : (x : α) = y) : x = y :=
-  Subtype.ext h
-
-theorem FS.val_injective {α : Type*} [MulPerm 𝔸 α] :
-    Function.Injective (FS.val : FS 𝔸 α → α) :=
-  Subtype.val_injective
-
-@[simp]
-theorem FS.val_mk {α : Type*} [MulPerm 𝔸 α] {x : α} {h : FinitelySupported 𝔸 x} :
-    ((⟨x, h⟩ : FS 𝔸 α) : α) = x :=
-  rfl
-
-@[simp]
-theorem FS.val_mk' {α : Type*} [MulPerm 𝔸 α] {x : α} {h : FinitelySupported 𝔸 x} :
-    FS.val (⟨x, h⟩ : {x : α // FinitelySupported 𝔸 x}) = x :=
-  rfl
-
-instance {α : Type*} [MulPerm 𝔸 α] : HasPerm 𝔸 (FS 𝔸 α) where
-  perm π x := ⟨π ⬝ (x : α), x.prop.perm π⟩
-
-@[simp]
-theorem FS.perm_coe {α : Type*} [MulPerm 𝔸 α] (x : FS 𝔸 α) (π : Finperm 𝔸) :
-    ((π ⬝ x : FS 𝔸 α) : α) = π ⬝ x :=
-  rfl
-
-instance {α : Type*} [MulPerm 𝔸 α] : MulPerm 𝔸 (FS 𝔸 α) where
-  one_perm _ := FS.ext (by rw [FS.perm_coe, one_perm])
-  mul_perm _ _ _ := FS.ext (by simp only [FS.perm_coe, mul_perm])
-
-theorem FS.val_equivariant {α : Type*} [MulPerm 𝔸 α] :
-    Equivariant 𝔸 (FS.val (𝔸 := 𝔸) (α := α)) := by
-  rw [Function.equivariant_iff]
-  intro π x
-  rfl
-
-instance {α : Type*} [MulPerm 𝔸 α] : Nominal 𝔸 (FS 𝔸 α) where
-  supported x := x.prop.of_map FS.val_injective FS.val_equivariant
-
-@[simp]
-theorem FS.supports_iff {α : Type*} [MulPerm 𝔸 α] (x : FS 𝔸 α) (s : Finset 𝔸) :
-    Supports s x ↔ Supports s (x : α) :=
-  ⟨λ h ↦ h.map val val_equivariant, λ h ↦ h.of_map val_injective val_equivariant⟩
-
-/-- The factorisation of an equivariant function from a nominal set through the finitely supported
-elements of its codomain. -/
-def Equivariant.toFS {α β : Type*} [Nominal 𝔸 α] [MulPerm 𝔸 β]
-    {f : α → β} (hf : Equivariant 𝔸 f) (x : α) : FS 𝔸 β :=
-  ⟨f x, (Nominal.supported x).map f hf⟩
-
-theorem Equivariant.toFS_equivariant {α β : Type*} [Nominal 𝔸 α] [MulPerm 𝔸 β]
-    {f : α → β} (hf : Equivariant 𝔸 f) :
-    Equivariant 𝔸 hf.toFS := by
-  intro π
-  ext x : 2
-  rw [Function.perm_def, Equivariant.toFS, FS.perm_coe, FS.val_mk', apply_perm_eq hf, perm_inv_perm]
-  rfl
-
-@[simp]
-protected theorem FS.supp_eq {α : Type*} [MulPerm 𝔸 α] (x : FS 𝔸 α) :
-    supp 𝔸 x = supp 𝔸 x.val := by
-  ext a
-  simp only [Nominal.mem_supp_iff, supports_iff, mem_supp_iff' _ x.prop]
-
-@[simp]
-theorem FS.fresh_iff {α β : Type*} [MulPerm 𝔸 α] [MulPerm 𝔸 β] (x : FS 𝔸 α) (y : β) :
-    y #[𝔸] x ↔ y #[𝔸] x.val := by
-  rw [fresh_def, fresh_def, FS.supp_eq]
 
 /-!
 # Finite permutations

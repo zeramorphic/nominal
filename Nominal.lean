@@ -1,5 +1,10 @@
 import Nominal.Abstraction
 import Nominal.Basic
+import Nominal.Category.Colimits
+import Nominal.Category.Coreflection
+import Nominal.Category.Defs
+import Nominal.Category.Forget
+import Nominal.Category.Limits
 import Nominal.Equivariant
 import Nominal.Finperm
 import Nominal.Fresh
