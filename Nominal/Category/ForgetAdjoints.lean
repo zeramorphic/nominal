@@ -49,7 +49,7 @@ def copowerAdj (𝔸 : Type*) [DecidableEq 𝔸] :
       ext x
       change π ⬝ (π⁻¹ * x.π) ⬝ x.val = x.π ⬝ x.val
       rw [mul_perm, perm_inv_perm]⟩
-    naturality α β f := by ext x; exact apply_perm_eq f.prop x.π x.val
+    naturality α β f := by ext x; exact apply_perm_eq f.equivariant x.π x.val
   }
   left_triangle_components α := by
     ext x
@@ -98,7 +98,7 @@ def powerAdj (𝔸 : Type*) [DecidableEq 𝔸] :
       ext x
       apply Power.ext
       ext π
-      exact apply_perm_eq f.prop π⁻¹ x
+      exact apply_perm_eq f.equivariant π⁻¹ x
   }
   counit := {
     app α x := x.map 1

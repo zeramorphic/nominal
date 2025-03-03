@@ -23,10 +23,10 @@ def Nominal.pairCone_isLimit (K : Discrete WalkingPair ⥤ Bundled (Nominal 𝔸
     intro π
     ext x
     apply Prod.ext
-    · apply (apply_perm_eq (s.π.app ⟨.left⟩).prop π _).trans
+    · apply (apply_perm_eq (s.π.app ⟨.left⟩).equivariant π _).trans
       rw [perm_inv_perm]
       rfl
-    · apply (apply_perm_eq (s.π.app ⟨.right⟩).prop π _).trans
+    · apply (apply_perm_eq (s.π.app ⟨.right⟩).equivariant π _).trans
       rw [perm_inv_perm]
       rfl⟩
   fac s j := by
@@ -65,14 +65,14 @@ def Nominal.productCone_isLimit [Infinite 𝔸] {J : Type*} (K : Discrete J ⥤ 
       use supp 𝔸 x
       intro π h
       ext i
-      exact (Nominal.supp_supports 𝔸 x).map _ (s.π.app i).prop π h⟩,
+      exact (Nominal.supp_supports 𝔸 x).map _ (s.π.app i).equivariant π h⟩,
     by
       intro π
       ext x
       apply FS.ext
       apply PointProduct.ext
       ext i
-      exact (congr_arg (π ⬝ ·) (apply_perm_eq (s.π.app i).prop π⁻¹ x)).symm.trans
+      exact (congr_arg (π ⬝ ·) (apply_perm_eq (s.π.app i).equivariant π⁻¹ x)).symm.trans
         (perm_inv_perm _ _)⟩
   uniq s m h := by
     ext x : 3
@@ -88,15 +88,17 @@ instance Nominal.hasProducts.{v} [Infinite 𝔸] :
 
 def Nominal.equaliserCone.{v} [Infinite 𝔸] (K : WalkingParallelPair ⥤ Bundled.{v} (Nominal 𝔸)) :
     Cone K where
-  pt := ⟨Equaliser (K.map .left) (K.map .right) (K.map .left).prop (K.map .right).prop,
+  pt := ⟨Equaliser (K.map .left) (K.map .right)
+      (K.map .left).equivariant (K.map .right).equivariant,
     inferInstance⟩
   π := {
     app j := match j with
-      | .zero => ⟨Equaliser.val (hf := (K.map .left).prop) (hg := (K.map .right).prop),
+      | .zero => ⟨Equaliser.val
+            (hf := (K.map .left).equivariant) (hg := (K.map .right).equivariant),
           Equaliser.val_equivariant⟩
       | .one => ⟨K.map .left ∘ Equaliser.val
-            (hf := (K.map .left).prop) (hg := (K.map .right).prop),
-          (K.map .left).prop.comp Equaliser.val_equivariant⟩
+            (hf := (K.map .left).equivariant) (hg := (K.map .right).equivariant),
+          (K.map .left).equivariant.comp Equaliser.val_equivariant⟩
     naturality j k h := by
       ext x
       cases h
@@ -114,11 +116,11 @@ def Nominal.equaliserCone_isLimit.{v} [Infinite 𝔸]
     (K : WalkingParallelPair ⥤ Bundled.{v} (Nominal 𝔸)) :
     IsLimit (equaliserCone K) where
   lift s := ⟨Equaliser.factor
-    (K.map .left) (K.map .right) (K.map .left).prop (K.map .right).prop
+    (K.map .left) (K.map .right) (K.map .left).equivariant (K.map .right).equivariant
     (s.π.app _)
     λ x ↦ (congr_arg (· x) (s.π.naturality .left)).symm.trans
       (congr_arg (· x) (s.π.naturality .right)),
-    Equaliser.factor_equivariant (s.π.app .zero).prop⟩
+    Equaliser.factor_equivariant (s.π.app .zero).equivariant⟩
   fac s j := by
     cases j
     case zero => rfl

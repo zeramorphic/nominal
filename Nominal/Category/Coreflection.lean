@@ -13,8 +13,8 @@ def nominalInclusion.{u} (𝔸 : Type*) [DecidableEq 𝔸] :
 def nominalCoreflection.{u} (𝔸 : Type*) [DecidableEq 𝔸] :
     Bundled.{u} (MulPerm 𝔸) ⥤ Bundled.{u} (Nominal 𝔸) where
   obj α := Nominal.of (FS 𝔸 α)
-  map {X Y} f := ⟨(f.prop.comp FS.val_equivariant).toFS,
-    (f.prop.comp FS.val_equivariant).toFS_equivariant⟩
+  map {X Y} f := ⟨(f.equivariant.comp FS.val_equivariant).toFS,
+    (f.equivariant.comp FS.val_equivariant).toFS_equivariant⟩
 
 def nominalInclusionFullyFaithful : FullyFaithful (nominalInclusion 𝔸) where
   preimage := id
@@ -61,7 +61,7 @@ def MulPerm.coproductCocone {J : Type*} (K : Discrete J ⥤ Bundled (MulPerm �
     Cocone K where
   pt := ⟨(j : Discrete J) × K.obj j, inferInstance⟩
   ι := {
-    app j := show {f // Equivariant 𝔸 f} from ⟨λ x ↦ ⟨j, x⟩,
+    app j := ⟨λ x ↦ ⟨j, x⟩,
       by intro π; ext x; rw [Function.perm_def, Sigma.perm_mk, perm_inv_perm]⟩
     naturality j k h := by cases Discrete.ext (Discrete.eq_of_hom h); simp
   }
@@ -71,7 +71,7 @@ def MulPerm.coproductCocone_isColimit {J : Type*} (K : Discrete J ⥤ Bundled (M
   desc s := ⟨λ x ↦ s.ι.app x.fst x.snd, by
     intro π
     ext x
-    apply (apply_perm_eq (s.ι.app (π⁻¹ ⬝ x).fst).prop π (π⁻¹ ⬝ x).snd).trans
+    apply (apply_perm_eq (s.ι.app (π⁻¹ ⬝ x).fst).equivariant π (π⁻¹ ⬝ x).snd).trans
     rw [Sigma.perm_snd, perm_inv_perm]
     rfl⟩
   uniq := by
@@ -85,7 +85,7 @@ def MulPerm.nominalCoreflection_coproductCocone_isColimit
   desc s := ⟨λ x ↦ s.ι.app x.val.fst ⟨x.val.snd, Sigma.snd_finitelySupported x.prop⟩, by
     intro π
     ext x
-    apply (apply_perm_eq (s.ι.app (π⁻¹ ⬝ x).val.fst).prop π _).trans
+    apply (apply_perm_eq (s.ι.app (π⁻¹ ⬝ x).val.fst).equivariant π _).trans
     apply congr_arg (s.ι.app _)
     exact perm_inv_perm π (show FS 𝔸 _ from ⟨x.val.snd, Sigma.snd_finitelySupported x.prop⟩)⟩
   uniq := by

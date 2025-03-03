@@ -44,17 +44,22 @@ theorem Nominal.coe_mk (α) (str) : (@Bundled.mk (Nominal 𝔸) α str : Type _)
 instance {α : Bundled (Nominal 𝔸)} : Nominal 𝔸 α :=
   α.str
 
-instance {α β : Type*} [HasPerm 𝔸 α] [HasPerm 𝔸 β] :
-    FunLike {f : α → β // Equivariant 𝔸 f} α β where
-  coe := Subtype.val
-  coe_injective' := Subtype.val_injective
+instance {α β : Type*} [MulPerm 𝔸 α] [MulPerm 𝔸 β] :
+    FunLike (EQ 𝔸 (α → β)) α β where
+  coe := EQ.val
+  coe_injective' := EQ.val_injective
+
+@[simp]
+theorem EQ.mk_coe {α β : Type*} [MulPerm 𝔸 α] [MulPerm 𝔸 β] (f : α → β) (hf : Equivariant 𝔸 f) :
+    (EQ.mk f hf : α → β) = f :=
+  rfl
 
 instance : Category (Bundled (MulPerm 𝔸)) where
-  Hom α β := {f : α → β // Equivariant 𝔸 f}
+  Hom α β := EQ 𝔸 (α → β)
   id _ := ⟨id, id_equivariant⟩
-  comp f g := ⟨g.val ∘ f.val, g.prop.comp f.prop⟩
+  comp f g := ⟨g.val ∘ f.val, g.equivariant.comp f.equivariant⟩
 
-instance : ConcreteCategory (Bundled (MulPerm 𝔸)) (λ α β ↦ {f : α → β // Equivariant 𝔸 f}) where
+instance : ConcreteCategory (Bundled (MulPerm 𝔸)) (λ α β ↦ EQ 𝔸 (α → β)) where
   hom := id
   ofHom := id
 
@@ -67,11 +72,11 @@ instance {α : Bundled (MulPerm 𝔸)} : MulPerm 𝔸 ((forget (Bundled (MulPerm
   α.str
 
 instance : Category (Bundled (Nominal 𝔸)) where
-  Hom α β := {f : α → β // Equivariant 𝔸 f}
+  Hom α β := EQ 𝔸 (α → β)
   id _ := ⟨id, id_equivariant⟩
-  comp f g := ⟨g.val ∘ f.val, g.prop.comp f.prop⟩
+  comp f g := ⟨g.val ∘ f.val, g.equivariant.comp f.equivariant⟩
 
-instance : ConcreteCategory (Bundled (Nominal 𝔸)) (λ α β ↦ {f : α → β // Equivariant 𝔸 f}) where
+instance : ConcreteCategory (Bundled (Nominal 𝔸)) (λ α β ↦ EQ 𝔸 (α → β)) where
   hom := id
   ofHom := id
 
@@ -102,7 +107,7 @@ def mulPermMap.{u} (𝔸 : Type*) [DecidableEq 𝔸] :
   }
   map f := {
     app _ := f
-    naturality _ _ π := by ext a; exact (apply_perm_eq f.prop π a).symm
+    naturality _ _ π := by ext a; exact (apply_perm_eq f.equivariant π a).symm
   }
 
 def mulPermMap'.{u} (𝔸 : Type*) [DecidableEq 𝔸] :
@@ -110,7 +115,7 @@ def mulPermMap'.{u} (𝔸 : Type*) [DecidableEq 𝔸] :
   obj F := MulPerm.of (F.obj (SingleObj.star (Finperm 𝔸)))
   map f := {
     val := f.app (SingleObj.star (Finperm 𝔸))
-    property := by
+    equivariant := by
       rw [Function.equivariant_iff]
       intro π x
       exact (congr_fun (f.naturality (X := SingleObj.star _) (Y := SingleObj.star _) π) x).symm

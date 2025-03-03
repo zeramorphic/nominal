@@ -240,6 +240,37 @@ theorem Part.fresh_of_not_dom {α β : Type*} [Nominal 𝔸 α]
   exact Finset.disjoint_empty_right _
 
 /-!
+# Equivariant subtype
+-/
+
+/-- An equivariant element of `α`. -/
+structure EQ (𝔸 : Type*) [DecidableEq 𝔸] (α : Type*) [HasPerm 𝔸 α] where
+  val : α
+  equivariant : Equivariant 𝔸 val
+
+attribute [coe] EQ.val
+
+instance {α : Type*} [HasPerm 𝔸 α] : CoeOut (EQ 𝔸 α) α where
+  coe := EQ.val
+
+@[ext]
+theorem EQ.ext {α : Type*} [HasPerm 𝔸 α] {x y : EQ 𝔸 α}
+    (h : (x : α) = y) : x = y := by
+  cases x; cases h; rfl
+
+theorem EQ.val_injective {α : Type*} [HasPerm 𝔸 α] :
+    Function.Injective (EQ.val : EQ 𝔸 α → α) := by
+  intro x y h
+  cases x
+  cases h
+  rfl
+
+@[simp]
+theorem EQ.val_mk {α : Type*} [HasPerm 𝔸 α] {x : α} {h : Equivariant 𝔸 x} :
+    ((⟨x, h⟩ : EQ 𝔸 α) : α) = x :=
+  rfl
+
+/-!
 # Coreflection
 
 We show that the category of nominal sets is coreflective in the category of `Finperm 𝔸`-sets.
@@ -883,3 +914,23 @@ theorem inv_perm_eq_of_fresh [Infinite 𝔸] {π : Finperm 𝔸} {α : Type*} [N
     (h : π #[𝔸] x) :
     π⁻¹ ⬝ x = x := by
   conv_lhs => rw [← perm_eq_of_fresh h, inv_perm_perm]
+
+/-!
+# Sets
+
+We define instances on `Set α` that agree definitionally with those on `α → Prop`.
+-/
+
+instance {α : Type*} [HasPerm 𝔸 α] :
+    HasPerm 𝔸 (Set α) where
+  perm π s := {x | π⁻¹ ⬝ x ∈ s}
+
+@[simp]
+theorem Set.perm_def {α : Type*} [HasPerm 𝔸 α] (π : Finperm 𝔸) (s : Set α) :
+    π ⬝ s = {x | π⁻¹ ⬝ x ∈ s} :=
+  rfl
+
+instance {α : Type*} [MulPerm 𝔸 α] :
+    MulPerm 𝔸 (Set α) where
+  one_perm := one_perm (α := α → Prop)
+  mul_perm := mul_perm (α := α → Prop)
