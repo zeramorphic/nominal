@@ -1,11 +1,5 @@
-import Mathlib.CategoryTheory.Functor.Basic
-import Mathlib.CategoryTheory.DiscreteCategory
-import Mathlib.CategoryTheory.Limits.Cones
 import Mathlib.CategoryTheory.Limits.Shapes.Pullback.Cospan
-import Mathlib.Data.Fintype.Defs
-import Mathlib.Data.Finset.Union
 import Mathlib.Data.Finite.Sum
-import Mathlib.CategoryTheory.Filtered.Basic
 
 /-!
 # The category of finite sets and injections
@@ -87,7 +81,7 @@ noncomputable def Finset.equivOfFinite {α : Type*} [Infinite α] {β : Type*} [
     β ≃ chosenOfFinite α β :=
   (exists_equiv_of_finite α β).some.snd
 
-noncomputable def FinInj.spanCocone {α : Type*} [DecidableEq α] [Infinite α]
+noncomputable def FinInj.pushoutCocone {α : Type*} [DecidableEq α] [Infinite α]
     (F : WalkingSpan ⥤ FinInj α) :
     Cocone F where
   pt := ⟨chosenOfFinite α (FinInj.SpanCoconeApex F)⟩

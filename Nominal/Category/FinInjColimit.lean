@@ -1,5 +1,5 @@
 import Mathlib.CategoryTheory.ConcreteCategory.Basic
-import Mathlib.CategoryTheory.Limits.Shapes.BinaryProducts
+import Mathlib.CategoryTheory.Limits.Shapes.Pullback.PullbackCone
 import Nominal.Category.FinInj
 
 /-!
@@ -34,10 +34,10 @@ instance finInjRel_trans {α : Type*} [Infinite α] (F : FinInj α ⥤ Type*) :
   have : DecidableEq α := Classical.typeDecidableEq α
   constructor
   intro x y z ⟨t₁, f₁, g₁, h₁⟩ ⟨t₂, f₂, g₂, h₂⟩
-  have := FinInj.spanCocone (span g₁ f₂)
-  refine ⟨(FinInj.spanCocone (span g₁ f₂)).pt,
-    f₁ ≫ PushoutCocone.inl (FinInj.spanCocone (span g₁ f₂)),
-    g₂ ≫ PushoutCocone.inr (FinInj.spanCocone (span g₁ f₂)), ?_⟩
+  have := FinInj.pushoutCocone (span g₁ f₂)
+  refine ⟨(FinInj.pushoutCocone (span g₁ f₂)).pt,
+    f₁ ≫ PushoutCocone.inl (FinInj.pushoutCocone (span g₁ f₂)),
+    g₂ ≫ PushoutCocone.inr (FinInj.pushoutCocone (span g₁ f₂)), ?_⟩
   rw [FunctorToTypes.map_comp_apply, FunctorToTypes.map_comp_apply, h₁, ← h₂,
     ← FunctorToTypes.map_comp_apply, ← FunctorToTypes.map_comp_apply,
     PushoutCocone.condition]
@@ -53,3 +53,34 @@ def finInjSetoid {α : Type*} [Infinite α] (F : FinInj α ⥤ Type*) :
 
 def finInjColimit {α : Type*} [Infinite α] (F : FinInj α ⥤ Type*) :=
   Quotient (finInjSetoid F)
+
+def finInjCocone.{u, v} {α : Type u} [Infinite α] (F : FinInj α ⥤ Type (max u v)) :
+    Cocone F where
+  pt := finInjColimit F
+  ι := {
+    app s x := Quotient.mk (finInjSetoid F) ⟨s, x⟩
+    naturality s t f := by
+      ext x
+      simp only [const_obj_obj, types_comp_apply, const_obj_map, types_id_apply]
+      apply Quotient.sound
+      refine ⟨t, 𝟙 t, f, ?_⟩
+      simp only [FunctorToTypes.map_id_apply]
+  }
+
+def finInjCocone_isColimit.{u, v} {α : Type u} [Infinite α] (F : FinInj α ⥤ Type (max u v)) :
+    IsColimit (finInjCocone F) where
+  desc c := Quotient.lift (λ x ↦ c.ι.app x.1 x.2) <| by
+    rintro ⟨s, x⟩ ⟨t, y⟩ ⟨u, f, g, h⟩
+    simp only
+    rw [← c.w f, ← c.w g, types_comp_apply, h]
+    rfl
+  fac c s := by
+    ext x
+    simp only [finInjCocone, const_obj_obj, types_comp_apply, Quotient.lift_mk]
+  uniq c m h := by
+    ext x
+    induction x using Quotient.inductionOn
+    case h x =>
+    simp only [Quotient.lift_mk]
+    rw [← h x.1]
+    rfl
