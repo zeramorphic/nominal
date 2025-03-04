@@ -51,12 +51,12 @@ def finInjSetoid {α : Type*} [Infinite α] (F : FinInj α ⥤ Type*) :
   r := finInjRel F
   iseqv := finInjRel_equivalence F
 
-def finInjColimit {α : Type*} [Infinite α] (F : FinInj α ⥤ Type*) :=
+def finInjColimitApex {α : Type*} [Infinite α] (F : FinInj α ⥤ Type*) :=
   Quotient (finInjSetoid F)
 
 def finInjCocone.{u, v} {α : Type u} [Infinite α] (F : FinInj α ⥤ Type (max u v)) :
     Cocone F where
-  pt := finInjColimit F
+  pt := finInjColimitApex F
   ι := {
     app s x := Quotient.mk (finInjSetoid F) ⟨s, x⟩
     naturality s t f := by
@@ -71,7 +71,7 @@ def finInjCocone_isColimit.{u, v} {α : Type u} [Infinite α] (F : FinInj α ⥤
     IsColimit (finInjCocone F) where
   desc c := Quotient.lift (λ x ↦ c.ι.app x.1 x.2) <| by
     rintro ⟨s, x⟩ ⟨t, y⟩ ⟨u, f, g, h⟩
-    simp only
+    dsimp only
     rw [← c.w f, ← c.w g, types_comp_apply, h]
     rfl
   fac c s := by
@@ -84,3 +84,27 @@ def finInjCocone_isColimit.{u, v} {α : Type u} [Infinite α] (F : FinInj α ⥤
     simp only [Quotient.lift_mk]
     rw [← h x.1]
     rfl
+
+def finInjColimit.{u, v} {α : Type u} [Infinite α] :
+    (FinInj α ⥤ Type (max u v)) ⥤ Type (max u v) where
+  obj := finInjColimitApex
+  map a := Quotient.lift (λ x ↦ Quotient.mk _ ⟨x.1, a.app x.1 x.2⟩) <| by
+    rintro ⟨s, x⟩ ⟨t, y⟩ ⟨u, f, g, h⟩
+    apply Quotient.sound
+    refine ⟨u, f, g, ?_⟩
+    simp only
+    refine (congr_arg (· x) (a.naturality f)).symm.trans ?_
+    rw [types_comp_apply, h]
+    exact (congr_arg (· y) (a.naturality g))
+  map_id β := by
+    ext x
+    induction x using Quotient.inductionOn
+    case h x =>
+    simp only [types_comp_apply, id_eq, eq_mpr_eq_cast, cast_eq, NatTrans.id_app, types_id_apply,
+      Sigma.eta, Quotient.lift_mk]
+  map_comp f g := by
+    ext x
+    induction x using Quotient.inductionOn
+    case h x =>
+    simp only [types_comp_apply, id_eq, eq_mpr_eq_cast, cast_eq, FunctorToTypes.comp,
+      Quotient.lift_mk]

@@ -4,7 +4,8 @@ import Mathlib.Data.Finite.Sum
 /-!
 # The category of finite sets and injections
 
-This small category is not filtered, but has pushouts.
+This small category is not filtered, but has a cocone for every span.
+Fortunately, this is enough to make the usual construction of filtered colimits work.
 -/
 
 open CategoryTheory Functor Limits Finset
@@ -81,6 +82,15 @@ noncomputable def Finset.equivOfFinite {α : Type*} [Infinite α] {β : Type*} [
     β ≃ chosenOfFinite α β :=
   (exists_equiv_of_finite α β).some.snd
 
+/--
+This is not a colimiting cocone. Indeed, consider the other cocone `c` given by
+```
+∅   → {x}
+↓      ↓
+{x} → {x}
+```
+The map of apexes from this cocone to `c` is not injective, so this cocone is not colimiting.
+-/
 noncomputable def FinInj.pushoutCocone {α : Type*} [DecidableEq α] [Infinite α]
     (F : WalkingSpan ⥤ FinInj α) :
     Cocone F where
