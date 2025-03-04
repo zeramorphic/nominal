@@ -5,6 +5,7 @@ import Nominal.Category.Coreflection
 import Nominal.Category.Defs
 import Nominal.Category.Forget
 import Nominal.Category.ForgetAdjoints
+import Nominal.Category.Generator
 import Nominal.Category.Limits
 import Nominal.Equivariant
 import Nominal.Finperm
