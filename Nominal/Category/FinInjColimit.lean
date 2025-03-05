@@ -10,16 +10,16 @@ In this file, we construct the colimit in `Type` for a diagram of shape `FinInj`
 
 open CategoryTheory Functor Limits
 
-def finInjRel {α : Type*} (F : FinInj α ⥤ Type*) (x y : (s : FinInj α) × F.obj s) : Prop :=
-  ∃ (t : FinInj α) (f : x.1 ⟶ t) (g : y.1 ⟶ t), F.map f x.2 = F.map g y.2
+def finInjRel {𝔸 : Type*} (F : FinInj 𝔸 ⥤ Type*) (x y : (s : FinInj 𝔸) × F.obj s) : Prop :=
+  ∃ (t : FinInj 𝔸) (f : x.1 ⟶ t) (g : y.1 ⟶ t), F.map f x.2 = F.map g y.2
 
-instance finInjRel_refl {α : Type*} (F : FinInj α ⥤ Type*) :
+instance finInjRel_refl {𝔸 : Type*} (F : FinInj 𝔸 ⥤ Type*) :
     IsRefl _ (finInjRel F) := by
   constructor
   intro x
   exact ⟨x.1, 𝟙 x.1, 𝟙 x.1, rfl⟩
 
-instance finInjRel_symm {α : Type*} (F : FinInj α ⥤ Type*) :
+instance finInjRel_symm {𝔸 : Type*} (F : FinInj 𝔸 ⥤ Type*) :
     IsSymm _ (finInjRel F) := by
   constructor
   rintro x y ⟨t, f, g, h⟩
@@ -29,9 +29,9 @@ instance : Fintype WalkingPair where
   elems := {.left, .right}
   complete x := by cases x <;> decide
 
-instance finInjRel_trans {α : Type*} [Infinite α] (F : FinInj α ⥤ Type*) :
+instance finInjRel_trans {𝔸 : Type*} [Infinite 𝔸] (F : FinInj 𝔸 ⥤ Type*) :
     IsTrans _ (finInjRel F) := by
-  have : DecidableEq α := Classical.typeDecidableEq α
+  have : DecidableEq 𝔸 := Classical.typeDecidableEq 𝔸
   constructor
   intro x y z ⟨t₁, f₁, g₁, h₁⟩ ⟨t₂, f₂, g₂, h₂⟩
   have := FinInj.pushoutCocone (span g₁ f₂)
@@ -42,19 +42,19 @@ instance finInjRel_trans {α : Type*} [Infinite α] (F : FinInj α ⥤ Type*) :
     ← FunctorToTypes.map_comp_apply, ← FunctorToTypes.map_comp_apply,
     PushoutCocone.condition]
 
-theorem finInjRel_equivalence {α : Type*} [Infinite α] (F : FinInj α ⥤ Type*) :
+theorem finInjRel_equivalence {𝔸 : Type*} [Infinite 𝔸] (F : FinInj 𝔸 ⥤ Type*) :
     Equivalence (finInjRel F) :=
   ⟨(finInjRel_refl F).refl, (finInjRel_symm F).symm _ _, (finInjRel_trans F).trans _ _ _⟩
 
-def finInjSetoid {α : Type*} [Infinite α] (F : FinInj α ⥤ Type*) :
-    Setoid ((s : FinInj α) × F.obj s) where
+def finInjSetoid {𝔸 : Type*} [Infinite 𝔸] (F : FinInj 𝔸 ⥤ Type*) :
+    Setoid ((s : FinInj 𝔸) × F.obj s) where
   r := finInjRel F
   iseqv := finInjRel_equivalence F
 
-def finInjColimitApex {α : Type*} [Infinite α] (F : FinInj α ⥤ Type*) :=
+def finInjColimitApex {𝔸 : Type*} [Infinite 𝔸] (F : FinInj 𝔸 ⥤ Type*) :=
   Quotient (finInjSetoid F)
 
-def finInjCocone.{u, v} {α : Type u} [Infinite α] (F : FinInj α ⥤ Type (max u v)) :
+def finInjCocone.{u, v} {𝔸 : Type u} [Infinite 𝔸] (F : FinInj 𝔸 ⥤ Type (max u v)) :
     Cocone F where
   pt := finInjColimitApex F
   ι := {
@@ -67,7 +67,7 @@ def finInjCocone.{u, v} {α : Type u} [Infinite α] (F : FinInj α ⥤ Type (max
       simp only [FunctorToTypes.map_id_apply]
   }
 
-def finInjCocone_isColimit.{u, v} {α : Type u} [Infinite α] (F : FinInj α ⥤ Type (max u v)) :
+def finInjCocone_isColimit.{u, v} {𝔸 : Type u} [Infinite 𝔸] (F : FinInj 𝔸 ⥤ Type (max u v)) :
     IsColimit (finInjCocone F) where
   desc c := Quotient.lift (λ x ↦ c.ι.app x.1 x.2) <| by
     rintro ⟨s, x⟩ ⟨t, y⟩ ⟨u, f, g, h⟩
@@ -85,8 +85,8 @@ def finInjCocone_isColimit.{u, v} {α : Type u} [Infinite α] (F : FinInj α ⥤
     rw [← h x.1]
     rfl
 
-def finInjColimit.{u, v} {α : Type u} [Infinite α] :
-    (FinInj α ⥤ Type (max u v)) ⥤ Type (max u v) where
+def finInjColimit.{u, v} (𝔸 : Type u) [Infinite 𝔸] :
+    (FinInj 𝔸 ⥤ Type (max u v)) ⥤ Type (max u v) where
   obj := finInjColimitApex
   map a := Quotient.lift (λ x ↦ Quotient.mk _ ⟨x.1, a.app x.1 x.2⟩) <| by
     rintro ⟨s, x⟩ ⟨t, y⟩ ⟨u, f, g, h⟩
@@ -108,3 +108,7 @@ def finInjColimit.{u, v} {α : Type u} [Infinite α] :
     case h x =>
     simp only [types_comp_apply, id_eq, eq_mpr_eq_cast, cast_eq, FunctorToTypes.comp,
       Quotient.lift_mk]
+
+instance {𝔸 : Type*} [Infinite 𝔸] (F : FinInj 𝔸 ⥤ Type _) :
+    HasPerm 𝔸 ((finInjColimit 𝔸).obj F) where
+  perm π := Quotient.lift (λ x ↦ Quotient.mk _ _) _
