@@ -109,6 +109,46 @@ def finInjColimit.{u, v} (𝔸 : Type u) [Infinite 𝔸] :
     simp only [types_comp_apply, id_eq, eq_mpr_eq_cast, cast_eq, FunctorToTypes.comp,
       Quotient.lift_mk]
 
-instance {𝔸 : Type*} [Infinite 𝔸] (F : FinInj 𝔸 ⥤ Type _) :
+def finInjLeg.{u, v} {𝔸 : Type u} [Infinite 𝔸] {F : FinInj 𝔸 ⥤ Type (max u v)}
+    (s : FinInj 𝔸) (x : F.obj s) :
+    (finInjColimit 𝔸).obj F :=
+  (finInjCocone F).ι.app s x
+
+@[elab_as_elim]
+theorem finInjLeg_inductionOn.{u, v} {𝔸 : Type u} [Infinite 𝔸] {F : FinInj 𝔸 ⥤ Type (max u v)}
+    {motive : (finInjColimit 𝔸).obj F → Prop}
+    (q : (finInjColimit 𝔸).obj F)
+    (h : (s : FinInj 𝔸) → (x : F.obj s) → motive (finInjLeg s x)) : motive q :=
+  Quot.inductionOn q (λ x ↦ h x.1 x.2)
+
+instance {𝔸 : Type*} [DecidableEq 𝔸] [Infinite 𝔸] (F : FinInj 𝔸 ⥤ Type _) :
     HasPerm 𝔸 ((finInjColimit 𝔸).obj F) where
-  perm π := Quotient.lift (λ x ↦ Quotient.mk _ _) _
+  perm π := Quotient.lift
+    (λ x ↦ finInjLeg (π ⬝ x.1) (F.map ((finInjPermIso π).inv.app x.1) x.2)) <| by
+      rintro ⟨s, x⟩ ⟨t, y⟩ ⟨u, f, g, h⟩
+      apply Quotient.sound
+      refine ⟨π ⬝ u, (finInjPermFunctor π).map f, (finInjPermFunctor π).map g, ?_⟩
+      simp only [id_obj]
+      have h₁ := congr_arg (F.map · x) ((finInjPermIso π).inv.naturality f)
+      have h₂ := congr_arg (F.map · y) ((finInjPermIso π).inv.naturality g)
+      simp only [id_obj, Functor.id_map, FunctorToTypes.map_comp_apply] at h₁ h₂
+      rw [← h₁, ← h₂, h]
+
+theorem finInjColimit_mk_perm {𝔸 : Type*} [DecidableEq 𝔸] [Infinite 𝔸]
+    (F : FinInj 𝔸 ⥤ Type _) (s : FinInj 𝔸) (x : F.obj s) (π : Finperm 𝔸) :
+    π ⬝ finInjLeg s x = finInjLeg (π ⬝ s) (F.map ((finInjPermIso π).inv.app s) x) :=
+  rfl
+
+instance {𝔸 : Type*} [DecidableEq 𝔸] [Infinite 𝔸] (F : FinInj 𝔸 ⥤ Type _) :
+    MulPerm 𝔸 ((finInjColimit 𝔸).obj F) where
+  one_perm x := by
+    induction x using finInjLeg_inductionOn
+    case h s x =>
+    simp only [finInjColimit_mk_perm]
+    sorry
+  mul_perm π₁ π₂ x := by
+    induction x using finInjLeg_inductionOn
+    case h s x =>
+    simp only [finInjColimit_mk_perm]
+    rw [← types_comp_apply (F.map _) (F.map _), ← Functor.map_comp]
+    sorry

@@ -386,7 +386,8 @@ def finInjPermFunctor {𝔸 : Type*} [DecidableEq 𝔸] (π : Finperm 𝔸) :
   obj s := π ⬝ s
   map {s t} f := (permIso π s).hom ≫ f ≫ (permIso π t).inv
 
-/-- The action of a finite permutation of atoms induces an equivalence of categories. -/
+/-- The action of a finite permutation of atoms induces an equivalence of categories.
+We'll normally just spell this as `finInjPermFunctor`, though. -/
 def finInjPerm {𝔸 : Type*} [DecidableEq 𝔸] (π : Finperm 𝔸) :
     FinInj 𝔸 ≌ FinInj 𝔸 where
   functor := finInjPermFunctor π
@@ -444,3 +445,25 @@ def finInjPerm {𝔸 : Type*} [DecidableEq 𝔸] (π : Finperm 𝔸) :
     ext x : 2
     simp only [finInjPermFunctor, permIso, perm_val, id_obj, comp_obj, isoOfEq, Category.assoc]
     exact perm_inv_perm π _
+
+/-- The permutation functor `FinInj 𝔸 ⥤ FinInj 𝔸` is an inner automorphism:
+it is naturally isomorphic to the identity. -/
+def finInjPermIso {𝔸 : Type*} [DecidableEq 𝔸] (π : Finperm 𝔸) :
+    finInjPermFunctor π ≅ 𝟭 (FinInj 𝔸) where
+  hom := {
+    app s := (FinInj.permIso π s).hom
+    naturality {s t} f := by
+      apply DFunLike.coe_injective
+      ext x
+      exact inv_perm_perm π _
+  }
+  inv := {
+    app s := (FinInj.permIso π s).inv
+    naturality {s t} f := by
+      apply DFunLike.coe_injective
+      ext x
+      change π _ = π _
+      congr 1
+      simp only [id_obj, Functor.id_map, perm_val, permIso, finInjPermFunctor, CategoryStruct.comp,
+        Embedding.trans, Embedding.coeFn_mk, Finperm.inv_apply_self, Subtype.coe_eta]
+  }
