@@ -55,6 +55,126 @@ theorem FinInj.mk_apply_eq {α : Type*} {s t : FinInj α}
 instance {α : Type*} : Nonempty (FinInj α) :=
   ⟨⟨∅⟩⟩
 
+/-!
+## Pullbacks
+-/
+
+def FinInj.pullbackConeApex {α : Type*} [DecidableEq α] [Infinite α]
+    (F : WalkingCospan ⥤ FinInj α) :
+    FinInj α :=
+  ⟨((F.obj (some .left)).val.attach.filter
+    (λ x ↦ ∃ y, F.map (.term .left) x = F.map (.term .right) y)).map
+    (Embedding.subtype _)⟩
+
+def FinInj.pullbackConeMapNone {α : Type*} [DecidableEq α] [Infinite α]
+    (F : WalkingCospan ⥤ FinInj α) :
+    pullbackConeApex F ⟶ F.obj none where
+  toFun x := ⟨F.map (.term .left) ⟨x,
+    by
+      have := x.prop
+      simp only [pullbackConeApex, Subtype.exists, mem_map, mem_filter, mem_attach, true_and,
+        Embedding.coe_subtype, exists_and_right, exists_eq_right] at this
+      obtain ⟨hx, y, hy, h⟩ := this
+      exact hx⟩,
+    Finset.coe_mem _⟩
+  inj' := by
+    rintro ⟨y, hy⟩ ⟨z, hz⟩ h
+    simp only [pullbackConeApex, Subtype.exists, mem_map, mem_filter, mem_attach, true_and,
+        Embedding.coe_subtype, exists_and_right, exists_eq_right] at hy hz
+    simp only [Subtype.mk.injEq] at h
+    obtain ⟨hy, a, ha, hay⟩ := hy
+    obtain ⟨hz, b, hb, hbz⟩ := hz
+    rw [hay, hbz] at h
+    have := (F.map (.term .right)).injective (Subtype.coe_injective h)
+    rw [Subtype.mk.injEq] at this
+    cases this
+    rw [← hbz] at hay
+    have := (F.map (.term .left)).injective hay
+    rw [Subtype.mk.injEq] at this
+    cases this
+    rfl
+
+def FinInj.pullbackConeMapLeft {α : Type*} [DecidableEq α] [Infinite α]
+    (F : WalkingCospan ⥤ FinInj α) :
+    pullbackConeApex F ⟶ F.obj (some .left) where
+  toFun x := ⟨x,
+    by
+      have := x.prop
+      simp only [pullbackConeApex, Subtype.exists, mem_map, mem_filter, mem_attach, true_and,
+        Embedding.coe_subtype, exists_and_right, exists_eq_right] at this
+      obtain ⟨hx, y, hy, h⟩ := this
+      exact hx⟩
+  inj' := by
+    rintro ⟨x, hx⟩ ⟨y, hy⟩ h
+    simp only [pullbackConeApex, Subtype.exists, mem_map, mem_filter, mem_attach, true_and,
+      Embedding.coe_subtype, exists_and_right, exists_eq_right] at hx hy
+    simp only [Subtype.mk.injEq] at h
+    cases h
+    rfl
+
+def FinInj.pullbackConeMapRight' {α : Type*} [DecidableEq α] [Infinite α]
+    (F : WalkingCospan ⥤ FinInj α) (x : (pullbackConeApex F).val) :
+    (F.obj (some .right)).val :=
+  (F.obj (some .right)).val.attach.choose
+  (λ y ↦ F.map (.term .left) (pullbackConeMapLeft F x) = F.map (.term .right) y) <| by
+    have := x.prop
+    simp only [pullbackConeApex, Subtype.exists, mem_map, mem_filter, mem_attach, true_and,
+      Embedding.coe_subtype, exists_and_right, exists_eq_right] at this
+    obtain ⟨hx, y, hy, h⟩ := this
+    refine ⟨⟨y, hy⟩, ⟨mem_attach _ _, h⟩, ?_⟩
+    rintro ⟨z, hz⟩ ⟨hz', h'⟩
+    exact (F.map (.term .right)).injective (h'.symm.trans h)
+
+theorem FinInj.pullbackConeMapRight'_property {α : Type*} [DecidableEq α] [Infinite α]
+    (F : WalkingCospan ⥤ FinInj α) (x : (pullbackConeApex F).val) :
+    F.map (.term .left) (pullbackConeMapLeft F x) =
+    F.map (.term .right) (pullbackConeMapRight' F x) :=
+  (F.obj (some .right)).val.attach.choose_property
+    (λ y ↦ F.map (.term .left) (pullbackConeMapLeft F x) = F.map (.term .right) y) _
+
+def FinInj.pullbackConeMapRight {α : Type*} [DecidableEq α] [Infinite α]
+    (F : WalkingCospan ⥤ FinInj α) :
+    pullbackConeApex F ⟶ F.obj (some .right) where
+  toFun := pullbackConeMapRight' F
+  inj' := by
+    intro x y h
+    apply (pullbackConeMapLeft F).injective
+    apply (F.map (.term .left)).injective
+    apply (pullbackConeMapRight'_property F x).trans
+    exact (h ▸ pullbackConeMapRight'_property F y).symm
+
+theorem FinInj.pullbackConeMapRight_comp {α : Type*} [DecidableEq α] [Infinite α]
+    (F : WalkingCospan ⥤ FinInj α) :
+    pullbackConeMapRight F ≫ F.map (.term WalkingPair.right) = pullbackConeMapNone F := by
+  apply DFunLike.coe_injective
+  ext x : 1
+  exact (pullbackConeMapRight'_property F x).symm
+
+def FinInj.pullbackCone {α : Type*} [DecidableEq α] [Infinite α]
+    (F : WalkingCospan ⥤ FinInj α) :
+    Cone F where
+  pt := pullbackConeApex F
+  π := {
+    app x := match x with
+      | none => pullbackConeMapNone F
+      | some .left => pullbackConeMapLeft F
+      | some .right => pullbackConeMapRight F
+    naturality {s t} f := by
+      cases f
+      case id =>
+        simp only [const_obj_obj, WidePullbackShape.hom_id, const_obj_map, Category.id_comp,
+          CategoryTheory.Functor.map_id, Category.comp_id]
+      case term i =>
+        cases i
+        case left => rfl
+        case right =>
+          simp only [const_obj_obj, const_obj_map, Category.id_comp, pullbackConeMapRight_comp]
+  }
+
+/-!
+## Pushout cocones
+-/
+
 inductive FinInj.SpanCoconeApex {α : Type*} [DecidableEq α]
     (F : WalkingSpan ⥤ FinInj α) where
   | inl : (F.obj (some .left)).val → FinInj.SpanCoconeApex F
