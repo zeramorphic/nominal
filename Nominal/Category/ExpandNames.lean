@@ -162,3 +162,11 @@ instance expandNames_essSurj [Infinite α] (i : Injection α β) :
 
 instance expandNames_isEquivalence [Infinite α] (i : Injection α β) :
     IsEquivalence (expandNames i) where
+
+def expandNamesPre [Infinite α] (i : Injection α β) :
+    (FinInj β ⥤ Type*) ⥤ (FinInj α ⥤ Type _) :=
+  (whiskeringLeft _ _ _).obj (expandNames i)
+
+instance expandNamesPre_isEquivalence [Infinite α] (i : Injection α β) :
+    IsEquivalence (expandNamesPre i) :=
+  inferInstanceAs (IsEquivalence ((whiskeringLeft _ _ _).obj _))
