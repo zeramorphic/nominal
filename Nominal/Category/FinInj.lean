@@ -67,30 +67,36 @@ def FinInj.pullbackConeApex {α : Type*} [DecidableEq α] [Infinite α]
     (λ x ↦ ∃ y, F.map (.term .left) x = F.map (.term .right) y)).map
     (Embedding.subtype _)⟩
 
+theorem FinInj.mem_pullbackConeApex_iff {α : Type*} [DecidableEq α] [Infinite α]
+    (F : WalkingCospan ⥤ FinInj α) (x : α) :
+    x ∈ (pullbackConeApex F).val ↔
+      ∃ (h : x ∈ (F.obj (some .left)).val),
+      ∃ y, F.map (.term .left) ⟨x, h⟩ = F.map (.term .right) y := by
+  simp only [pullbackConeApex, Subtype.exists, mem_map, mem_filter, mem_attach, true_and,
+    Embedding.coe_subtype, exists_and_right, exists_eq_right]
+
 def FinInj.pullbackConeMapNone {α : Type*} [DecidableEq α] [Infinite α]
     (F : WalkingCospan ⥤ FinInj α) :
     pullbackConeApex F ⟶ F.obj none where
   toFun x := ⟨F.map (.term .left) ⟨x,
     by
       have := x.prop
-      simp only [pullbackConeApex, Subtype.exists, mem_map, mem_filter, mem_attach, true_and,
-        Embedding.coe_subtype, exists_and_right, exists_eq_right] at this
-      obtain ⟨hx, y, hy, h⟩ := this
+      rw [mem_pullbackConeApex_iff] at this
+      obtain ⟨hx, y, h⟩ := this
       exact hx⟩,
     Finset.coe_mem _⟩
   inj' := by
     rintro ⟨y, hy⟩ ⟨z, hz⟩ h
-    simp only [pullbackConeApex, Subtype.exists, mem_map, mem_filter, mem_attach, true_and,
-        Embedding.coe_subtype, exists_and_right, exists_eq_right] at hy hz
+    rw [mem_pullbackConeApex_iff] at hy hz
     simp only [Subtype.mk.injEq] at h
-    obtain ⟨hy, a, ha, hay⟩ := hy
-    obtain ⟨hz, b, hb, hbz⟩ := hz
-    rw [hay, hbz] at h
+    obtain ⟨hy, a, ha⟩ := hy
+    obtain ⟨hz, b, hb⟩ := hz
+    rw [ha, hb] at h
     have := (F.map (.term .right)).injective (Subtype.coe_injective h)
     rw [Subtype.mk.injEq] at this
-    cases this
-    rw [← hbz] at hay
-    have := (F.map (.term .left)).injective hay
+    cases Subtype.coe_injective this
+    rw [← hb] at ha
+    have := (F.map (.term .left)).injective ha
     rw [Subtype.mk.injEq] at this
     cases this
     rfl
@@ -101,14 +107,12 @@ def FinInj.pullbackConeMapLeft {α : Type*} [DecidableEq α] [Infinite α]
   toFun x := ⟨x,
     by
       have := x.prop
-      simp only [pullbackConeApex, Subtype.exists, mem_map, mem_filter, mem_attach, true_and,
-        Embedding.coe_subtype, exists_and_right, exists_eq_right] at this
-      obtain ⟨hx, y, hy, h⟩ := this
+      rw [mem_pullbackConeApex_iff] at this
+      obtain ⟨hx, y, hy⟩ := this
       exact hx⟩
   inj' := by
     rintro ⟨x, hx⟩ ⟨y, hy⟩ h
-    simp only [pullbackConeApex, Subtype.exists, mem_map, mem_filter, mem_attach, true_and,
-      Embedding.coe_subtype, exists_and_right, exists_eq_right] at hx hy
+    rw [mem_pullbackConeApex_iff] at hx hy
     simp only [Subtype.mk.injEq] at h
     cases h
     rfl
@@ -119,12 +123,11 @@ def FinInj.pullbackConeMapRight' {α : Type*} [DecidableEq α] [Infinite α]
   (F.obj (some .right)).val.attach.choose
   (λ y ↦ F.map (.term .left) (pullbackConeMapLeft F x) = F.map (.term .right) y) <| by
     have := x.prop
-    simp only [pullbackConeApex, Subtype.exists, mem_map, mem_filter, mem_attach, true_and,
-      Embedding.coe_subtype, exists_and_right, exists_eq_right] at this
-    obtain ⟨hx, y, hy, h⟩ := this
-    refine ⟨⟨y, hy⟩, ⟨mem_attach _ _, h⟩, ?_⟩
+    rw [mem_pullbackConeApex_iff] at this
+    obtain ⟨hx, y, hy⟩ := this
+    refine ⟨y, ⟨mem_attach _ _, hy⟩, ?_⟩
     rintro ⟨z, hz⟩ ⟨hz', h'⟩
-    exact (F.map (.term .right)).injective (h'.symm.trans h)
+    exact (F.map (.term .right)).injective (h'.symm.trans hy)
 
 theorem FinInj.pullbackConeMapRight'_property {α : Type*} [DecidableEq α] [Infinite α]
     (F : WalkingCospan ⥤ FinInj α) (x : (pullbackConeApex F).val) :
@@ -171,6 +174,50 @@ def FinInj.pullbackCone {α : Type*} [DecidableEq α] [Infinite α]
         case right =>
           simp only [const_obj_obj, const_obj_map, Category.id_comp, pullbackConeMapRight_comp]
   }
+
+def FinInj.pullbackConeLift {α : Type*} [DecidableEq α] [Infinite α]
+    (F : WalkingCospan ⥤ FinInj α) (s : Cone F) :
+    s.pt ⟶ pullbackConeApex F :=
+  ⟨λ x ↦ ⟨s.π.app (some .left) x,
+    by
+      rw [mem_pullbackConeApex_iff]
+      refine ⟨?_, s.π.app (some .right) x, ?_⟩
+      · simp only [const_obj_obj, coe_mem]
+      · exact (congr_arg (· x) (s.w (.term .left))).trans (congr_arg (· x) (s.w (.term .right))).symm⟩,
+    by
+      intro x y h
+      simp only [const_obj_obj, Subtype.mk.injEq] at h
+      exact (s.π.app (some .left)).injective (Subtype.coe_injective h)⟩
+
+def FinInj.pullbackCone_isLimit {α : Type*} [DecidableEq α] [Infinite α]
+    (F : WalkingCospan ⥤ FinInj α) :
+    IsLimit (pullbackCone F) where
+  lift := pullbackConeLift F
+  fac s j := by
+    apply DFunLike.coe_injective
+    ext x : 1
+    cases j with
+    | none => exact congr_arg (· x) (s.w (.term .left))
+    | some j =>
+      cases j with
+      | left => rfl
+      | right =>
+        apply (F.map (.term .right)).injective
+        have h₁ := congr_arg (· (pullbackConeLift F s x)) ((pullbackCone F).w (.term .right))
+        have h₂ := congr_arg (· x) (s.w (.term .right))
+        have h₃ := congr_arg (· x) (s.w (.term .left))
+        exact (h₁.trans h₃).trans h₂.symm
+  uniq s m h := by
+    apply DFunLike.coe_injective
+    ext x : 2
+    simp only [pullbackConeLift, const_obj_obj]
+    change _ = (s.π.app (some .left) x).val
+    rw [← h]
+    rfl
+
+instance FinInj.hasPullbacks {α : Type*} [DecidableEq α] [Infinite α] :
+    HasLimitsOfShape WalkingCospan (FinInj α) :=
+  ⟨λ F ↦ ⟨_, pullbackCone_isLimit F⟩⟩
 
 /-!
 ## Pushout cocones
