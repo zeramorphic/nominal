@@ -114,6 +114,12 @@ def finInjLeg.{u, v} {𝔸 : Type u} [Infinite 𝔸] {F : FinInj 𝔸 ⥤ Type (
     (finInjColimit 𝔸).obj F :=
   (finInjCocone F).ι.app s x
 
+@[simp]
+theorem finInjLeg_w.{u, v} {𝔸 : Type u} [Infinite 𝔸] (F : FinInj 𝔸 ⥤ Type (max u v))
+    {s t : FinInj 𝔸} (f : s ⟶ t) :
+    F.map f ≫ finInjLeg t = finInjLeg s :=
+  (finInjCocone F).w f
+
 @[elab_as_elim]
 theorem finInjLeg_inductionOn.{u, v} {𝔸 : Type u} [Infinite 𝔸] {F : FinInj 𝔸 ⥤ Type (max u v)}
     {motive : (finInjColimit 𝔸).obj F → Prop}
@@ -121,18 +127,45 @@ theorem finInjLeg_inductionOn.{u, v} {𝔸 : Type u} [Infinite 𝔸] {F : FinInj
     (h : (s : FinInj 𝔸) → (x : F.obj s) → motive (finInjLeg s x)) : motive q :=
   Quot.inductionOn q (λ x ↦ h x.1 x.2)
 
+def finInjPermCocone {𝔸 : Type*} [DecidableEq 𝔸] [Infinite 𝔸] (F : FinInj 𝔸 ⥤ Type _)
+    (π : Finperm 𝔸) :
+    Cocone F where
+  pt := (finInjColimit 𝔸).obj F
+  ι := {
+    app s := F.map ((finInjPermIso π).inv.app s) ≫ (finInjCocone F).ι.app (π ⬝ s)
+    naturality {s t} f := by
+      have := (isoWhiskerRight (finInjPermIso π) F).inv.naturality f
+      simp only [comp_obj, id_obj, Functor.comp_map, Functor.id_map, isoWhiskerRight_inv,
+        whiskerRight_app] at this
+      simp only [const_obj_obj, const_obj_map, Category.comp_id]
+      rw [← Category.assoc, this, Category.assoc]
+      erw [(finInjCocone F).w ((finInjPermFunctor π).map f)]
+      rfl
+  }
+
+theorem finInjPermCocone_ι_app_one {𝔸 : Type*} [DecidableEq 𝔸] [Infinite 𝔸] (F : FinInj 𝔸 ⥤ Type _)
+    (s : FinInj 𝔸) :
+    (finInjPermCocone F 1).ι.app s = (finInjCocone F).ι.app s :=
+  (finInjCocone F).w ((finInjPermIso 1).inv.app s)
+
+theorem finInjPermCocone_ι_app_mul {𝔸 : Type*} [DecidableEq 𝔸] [Infinite 𝔸] (F : FinInj 𝔸 ⥤ Type _)
+    (π₁ π₂ : Finperm 𝔸) (s : FinInj 𝔸) :
+    (finInjPermCocone F (π₁ * π₂)).ι.app s =
+      (finInjPermCocone F π₂).ι.app s ≫
+      (finInjCocone_isColimit F).desc (finInjPermCocone F π₁) := by
+  simp only [finInjPermCocone, const_obj_obj, Category.assoc, IsColimit.fac]
+  erw [(finInjCocone F).w ((finInjPermIso π₁).inv.app (π₂ ⬝ s)),
+    (finInjCocone F).w ((finInjPermIso (π₁ * π₂)).inv.app s),
+    (finInjCocone F).w ((finInjPermIso π₂).inv.app s)]
+
 instance {𝔸 : Type*} [DecidableEq 𝔸] [Infinite 𝔸] (F : FinInj 𝔸 ⥤ Type _) :
     HasPerm 𝔸 ((finInjColimit 𝔸).obj F) where
-  perm π := Quotient.lift
-    (λ x ↦ finInjLeg (π ⬝ x.1) (F.map ((finInjPermIso π).inv.app x.1) x.2)) <| by
-      rintro ⟨s, x⟩ ⟨t, y⟩ ⟨u, f, g, h⟩
-      apply Quotient.sound
-      refine ⟨π ⬝ u, (finInjPermFunctor π).map f, (finInjPermFunctor π).map g, ?_⟩
-      simp only [id_obj]
-      have h₁ := congr_arg (F.map · x) ((finInjPermIso π).inv.naturality f)
-      have h₂ := congr_arg (F.map · y) ((finInjPermIso π).inv.naturality g)
-      simp only [id_obj, Functor.id_map, FunctorToTypes.map_comp_apply] at h₁ h₂
-      rw [← h₁, ← h₂, h]
+  perm π := (finInjCocone_isColimit F).desc (finInjPermCocone F π)
+
+theorem finInjColimit_perm_def {𝔸 : Type*} [DecidableEq 𝔸] [Infinite 𝔸]
+    (F : FinInj 𝔸 ⥤ Type _) (x : (finInjColimit 𝔸).obj F) (π : Finperm 𝔸) :
+    π ⬝ x = (finInjCocone_isColimit F).desc (finInjPermCocone F π) x :=
+  rfl
 
 theorem finInjColimit_mk_perm {𝔸 : Type*} [DecidableEq 𝔸] [Infinite 𝔸]
     (F : FinInj 𝔸 ⥤ Type _) (s : FinInj 𝔸) (x : F.obj s) (π : Finperm 𝔸) :
@@ -142,13 +175,13 @@ theorem finInjColimit_mk_perm {𝔸 : Type*} [DecidableEq 𝔸] [Infinite 𝔸]
 instance {𝔸 : Type*} [DecidableEq 𝔸] [Infinite 𝔸] (F : FinInj 𝔸 ⥤ Type _) :
     MulPerm 𝔸 ((finInjColimit 𝔸).obj F) where
   one_perm x := by
-    induction x using finInjLeg_inductionOn
-    case h s x =>
-    simp only [finInjColimit_mk_perm]
-    sorry
+    rw [finInjColimit_perm_def, ← (finInjCocone_isColimit F).uniq]
+    intro s
+    change (finInjCocone F).ι.app s = _
+    rw [finInjPermCocone_ι_app_one]
   mul_perm π₁ π₂ x := by
-    induction x using finInjLeg_inductionOn
-    case h s x =>
-    simp only [finInjColimit_mk_perm]
-    rw [← types_comp_apply (F.map _) (F.map _), ← Functor.map_comp]
-    sorry
+    simp only [finInjColimit_perm_def]
+    rw [← (finInjCocone_isColimit F).uniq]
+    intro s
+    rw [finInjPermCocone_ι_app_mul]
+    rfl
