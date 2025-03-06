@@ -72,8 +72,22 @@ noncomputable def supportedBy.{u} (α : Type u) [MulPerm 𝔸 α] : FinInj 𝔸 
   map_id s := SupportedBy.map_id s.val
   map_comp f g := SupportedBy.map_comp f f.injective g g.injective
 
-noncomputable def mulPermToFinInj : Bundled (MulPerm 𝔸) ⥤ (FinInj 𝔸 ⥤ Type*) where
+noncomputable def mulPermToFinInj (𝔸 : Type*) [DecidableEq 𝔸] :
+    Bundled (MulPerm 𝔸) ⥤ (FinInj 𝔸 ⥤ Type*) where
   obj α := supportedBy α
-  map := sorry
-  map_id := sorry
-  map_comp := sorry
+  map {α β} f := {
+    app s x := ⟨f x.val, x.supports.map f f.equivariant⟩
+    naturality {s t} g := by
+      ext x
+      simp only [MulPerm.forget_hom, types_comp_apply]
+      apply SupportedBy.ext
+      simp only
+      obtain ⟨π, h, -⟩ := Finperm.exists_extension' ⟨g, g.injective⟩
+      simp only [supportedBy]
+      rw [SupportedBy.map_apply_eq_perm π, SupportedBy.map_apply_eq_perm π]
+      · exact (apply_perm_eq f.equivariant _ _).symm
+      · intro a
+        exact (h a a.prop).symm
+      · intro a
+        exact (h a a.prop).symm
+  }

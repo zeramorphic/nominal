@@ -1,4 +1,5 @@
 import Mathlib.CategoryTheory.Limits.Shapes.Pullback.Cospan
+import Mathlib.CategoryTheory.Limits.Shapes.BinaryProducts
 import Mathlib.Data.Finite.Sum
 import Mathlib.Logic.Embedding.Basic
 import Nominal.Category.Defs
@@ -223,6 +224,28 @@ instance FinInj.hasPullbacks {𝔸 : Type*} [DecidableEq 𝔸] [Infinite 𝔸] :
   ⟨λ F ↦ ⟨_, pullbackCone_isLimit F⟩⟩
 
 /-!
+## Unions
+-/
+
+def FinInj.unionCocone {𝔸 : Type*} [DecidableEq 𝔸] (s t : FinInj 𝔸) :
+    Cocone (pair s t) where
+  pt := ⟨s.val ∪ t.val⟩
+  ι := {
+    app x := match x with
+      | ⟨.left⟩ => ⟨λ x ↦ ⟨x,
+        by simp only [const_obj_obj, pair_obj_left, mem_union, coe_mem, true_or]⟩,
+        by intro x y h; simpa only [const_obj_obj, pair_obj_left,
+          Subtype.mk.injEq, Subtype.coe_inj] using h⟩
+      | ⟨.right⟩ => ⟨λ x ↦ ⟨x,
+        by simp only [const_obj_obj, pair_obj_right, mem_union, coe_mem, or_true]⟩,
+        by intro x y h; simpa only [const_obj_obj, pair_obj_right,
+          Subtype.mk.injEq, Subtype.coe_inj] using h⟩
+    naturality {i j} f := by
+      cases Discrete.ext (Discrete.eq_of_hom f)
+      rfl
+  }
+
+/-!
 ## Pushout cocones
 -/
 
@@ -348,6 +371,11 @@ instance {𝔸 : Type*} [DecidableEq 𝔸] : Nominal 𝔸 (FinInj 𝔸) where
       rwa [← this] at ha
     · intro ha
       rwa [← h _ ha, Finperm.inv_apply_self]
+
+@[simp]
+theorem FinInj.perm_mk {𝔸 : Type*} [DecidableEq 𝔸] (π : Finperm 𝔸) (s : Finset 𝔸) :
+    π ⬝ ⟨s⟩ = (⟨π ⬝ s⟩ : FinInj 𝔸) :=
+  rfl
 
 @[simp]
 theorem FinInj.perm_val {𝔸 : Type*} [DecidableEq 𝔸] (π : Finperm 𝔸) (s : FinInj 𝔸) :
