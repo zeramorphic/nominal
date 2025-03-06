@@ -545,6 +545,44 @@ theorem exists_extension [DecidableEq α] {s t : Finset α} (π : s ≃ t) :
       Finset.mem_filter, Finset.mem_union, h, or_self, ↓reduceDIte, not_true_eq_false,
       and_self] at ha
 
+def _root_.Function.Embedding.toEquivFinsetRange {α β : Type*} {s : Finset α} [DecidableEq β]
+    (f : s ↪ β) :
+    s ≃ s.attach.map f where
+  toFun x := ⟨f x, by simp only [Finset.mem_map', Finset.mem_attach]⟩
+  invFun x := s.attach.choose (λ y ↦ f y = x) <| by
+    obtain ⟨x, hx⟩ := x
+    simp only [Finset.mem_map, Finset.mem_attach, true_and, Subtype.exists] at hx
+    obtain ⟨a, ha, rfl⟩ := hx
+    refine ⟨⟨a, ha⟩, ?_⟩
+    simp only [Finset.mem_attach, and_self, EmbeddingLike.apply_eq_iff_eq, true_and, imp_self,
+      implies_true]
+  left_inv x := by
+    apply f.injective
+    exact s.attach.choose_property (λ y ↦ f y = f x) _
+  right_inv x := by
+    apply Subtype.val_injective
+    exact s.attach.choose_property (λ y ↦ f y = x) _
+
+/-- The homogeneity lemma for injections: there is a `Finperm α` extending any given injection
+of finite sets `s ↪ t`, acting as the identity outside `s ∪ t`. -/
+theorem exists_extension' [DecidableEq α] {s t : Finset α} (f : s ↪ t) :
+    ∃ π : Finperm α, (∀ (a : α) (ha : a ∈ s), π a = f ⟨a, ha⟩) ∧
+      (π.support ⊆ s ∪ t) := by
+  obtain ⟨π, h₁, h₂⟩ := exists_extension
+    ((f.trans (Function.Embedding.subtype _)).toEquivFinsetRange)
+  refine ⟨π, ?_, ?_⟩
+  · intro a ha
+    rw [h₁ a ha]
+    rfl
+  · intro a ha
+    have := h₂ ha
+    simp only [Finset.mem_union, Finset.mem_map, Finset.mem_attach, Function.Embedding.trans_apply,
+      Function.Embedding.coe_subtype, true_and, Subtype.exists] at this
+    rw [Finset.mem_union]
+    obtain ha' | ⟨b, hb, rfl⟩ := this
+    · exact Or.inl ha'
+    · exact Or.inr (Finset.coe_mem (f ⟨b, hb⟩))
+
 /-- Another useful statement of the homogeneity lemma: for any two finite sets `s, t`,
 there is a finite permutation that maps `s` outside `t`, and is the identity on `t \ s`. -/
 theorem exists_fresh [DecidableEq α] [Infinite α] (s t : Finset α) :
