@@ -141,7 +141,7 @@ theorem unit_supp [Infinite 𝔸] [MulPerm 𝔸 α] [Nominal 𝔸 β] (x : β) :
   intro s hs
   by_contra ha'
   obtain ⟨y, hy⟩ := exists_fresh 𝔸 α x
-  obtain ⟨b, hb₁, hb₂⟩ := ha.exists_not_mem_finset s
+  obtain ⟨b, hb₁, hb₂⟩ := ha.exists_notMem_finset s
   have := hs (swap a b) ?_
   · simp only [funext_iff, Function.perm_def, swap_inv, SepProd.perm_fst, SepProd.perm_snd,
       perm_left_cancel_iff, IsDiscrete.perm_eq, eq_iff_iff, and_congr_left_iff] at this
@@ -171,7 +171,7 @@ theorem unit_mem_supp_iff [Infinite 𝔸] [Nominal 𝔸 α] [Nominal 𝔸 β] (x
     (a ∈ supp 𝔸 λ (z : α) (w : β ∗[𝔸] α) ↦ w.fst = x ∧ w.snd = z) ↔
     ∃ (y : α) (z : β ∗[𝔸] α), (z.fst = x ∧ z.snd = y) ∧ a ∈ supp 𝔸 z \ supp 𝔸 y := by
   obtain hα | hα := isEmpty_or_nonempty α
-  · simp only [IsDiscrete.supp_eq, Finset.not_mem_empty, SepProd.supp_eq, Finset.union_empty,
+  · simp only [IsDiscrete.supp_eq, Finset.notMem_empty, SepProd.supp_eq, Finset.union_empty,
       Finset.sdiff_empty, IsEmpty.exists_iff]
   · have hsupp := Or.resolve_left (unit_supp x (𝔸 := 𝔸) (α := α)) (not_isEmpty_of_nonempty α)
     rw [hsupp]
@@ -273,7 +273,7 @@ theorem transpAux_dom_eq [Infinite 𝔸] [MulPerm 𝔸 α] [MulPerm 𝔸 β] [Mu
   · rw [swaps_eq_of_mem₁ a (Finset.mem_inter_of_mem ha hax)] at hay
     have := (e ⟨a, Finset.mem_inter_of_mem ha hax⟩).prop
     exact hs.1 _ hay _ this rfl
-  · rw [swaps_eq_of_not_mem] at hay
+  · rw [swaps_eq_of_notMem] at hay
     · contradiction
     · simp only [Finset.mem_inter, ha, false_and, not_false_eq_true]
     · intro ha'
@@ -314,8 +314,8 @@ theorem transpAux_equivariant' [Infinite 𝔸] [MulPerm 𝔸 α] [Nominal 𝔸 �
       have := Finset.mem_inter_of_mem h₁ (((e.perm π) _).prop)
       rw [Finset.disjoint_union_left, Finset.disjoint_iff_inter_eq_empty] at hs
       rw [Finset.mem_inter, Finset.mem_perm, Finset.mem_perm, ← Finset.mem_inter, hs.1] at this
-      exact Finset.not_mem_empty _ this
-    · rw [swaps_eq_of_not_mem] at h₁
+      exact Finset.notMem_empty _ this
+    · rw [swaps_eq_of_notMem] at h₁
       contradiction
       · simp only [supp_perm_eq, Finset.mem_inter, Finset.mem_perm, perm_name_eq, hax, h₂,
           and_true, not_false_eq_true]
@@ -336,7 +336,7 @@ theorem transpAux_equivariant' [Infinite 𝔸] [MulPerm 𝔸 α] [Nominal 𝔸 �
       · simp only [supp_perm_eq, Finset.mem_inter, Finset.mem_perm, perm_name_eq, inv_apply_self,
           hay, hax, and_self]
       · simp only [Finset.mem_inter, hay, hax, and_self]
-    · rw [swaps_eq_of_not_mem, swaps_eq_of_not_mem]
+    · rw [swaps_eq_of_notMem, swaps_eq_of_notMem]
       · simp only [supp_perm_eq, Finset.mem_inter, Finset.mem_perm, perm_name_eq, inv_apply_self,
           hax, and_false, not_false_eq_true]
       · simp only [Finset.mem_perm, perm_name_eq, inv_apply_self]
@@ -395,7 +395,7 @@ theorem transpAux_coinjective [Infinite 𝔸] [Nominal 𝔸 α] [Nominal 𝔸 β
         have := (hπ₂ (a := a)).mt
           (λ h ↦ by simp only [Finset.mem_union, has, has', or_self] at h)
         rw [Finperm.mem_support_iff, not_not] at this
-        rw [swaps_eq_of_not_mem a, this, swaps_eq_of_not_mem]
+        rw [swaps_eq_of_notMem a, this, swaps_eq_of_notMem]
         · simp only [Finset.mem_inter, hax, and_false, not_false_eq_true]
         · exact has'
         · simp only [Finset.mem_inter, hax, and_false, not_false_eq_true]
@@ -434,7 +434,7 @@ theorem transpAux_coinjective [Infinite 𝔸] [Nominal 𝔸 α] [Nominal 𝔸 β
       have := (e.symm ⟨a, has⟩).prop
       rw [Finset.mem_inter] at this
       cases hax' this.2
-    · rwa [swaps_eq_of_not_mem] at hay
+    · rwa [swaps_eq_of_notMem] at hay
       · simp only [Finset.mem_inter, hax, and_false, not_false_eq_true]
       · exact has
 
@@ -496,7 +496,7 @@ theorem transp_mem_supp_iff_aux [Infinite 𝔸] [Nominal 𝔸 α] [Nominal 𝔸 
       rw [Finset.disjoint_iff_ne] at hs
       exact (hs a this a).mt (· rfl)
     have := Finset.perm_mem_perm ha (swaps hs' e)
-    rw [perm_name_eq, Finset.perm_sdiff, swaps_eq_of_not_mem] at this
+    rw [perm_name_eq, Finset.perm_sdiff, swaps_eq_of_notMem] at this
     · simp only [Finset.mem_sdiff, ← supp_perm_eq, apply_perm_eq hf,
         SepProd.perm_def, ← mul_perm, swaps_swaps, one_perm] at this ⊢
       exact this

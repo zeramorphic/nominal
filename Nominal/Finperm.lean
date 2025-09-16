@@ -226,13 +226,13 @@ theorem swap_triple [DecidableEq α] (a b c : α) (h₁ : a ≠ b) (h₂ : b ≠
     swap a b = swap a c * swap b c * swap a c := by
   ext d
   simp only [swap_apply_def, mul_apply]
-  split_ifs <;> cc
+  aesop
 
 theorem swap_triple' [DecidableEq α] (a b c : α) (h₁ : a ≠ b) (h₂ : b ≠ c) :
     swap a c = swap a b * swap a c * swap b c := by
   ext d
   simp only [swap_apply_def, mul_apply]
-  split_ifs <;> cc
+  aesop
 
 theorem swap_pair [DecidableEq α] (a b c : α) (h₁ : a ≠ b) (h₂ : b ≠ c) :
     swap b c * swap a c = swap a c * swap a b := by
@@ -262,7 +262,7 @@ theorem remove_support_subset [DecidableEq α] (π : Finperm α) (a : α) :
     (π.remove a).support ⊆ π.support :=
   Finset.filter_subset _ _
 
-theorem not_mem_remove_support [DecidableEq α] (π : Finperm α) (a : α) :
+theorem notMem_remove_support [DecidableEq α] (π : Finperm α) (a : α) :
     a ∉ (π.remove a).support := by
   rw [mem_support_iff, remove_apply]
   simp
@@ -273,7 +273,7 @@ theorem remove_support_ssubset [DecidableEq α] (π : Finperm α)
   rw [ssubset_iff_subset_not_subset]
   refine ⟨π.remove_support_subset a, ?_⟩
   rw [Finset.not_subset]
-  exact ⟨a, ha, π.not_mem_remove_support a⟩
+  exact ⟨a, ha, π.notMem_remove_support a⟩
 
 @[elab_as_elim]
 theorem swap_induction_right [DecidableEq α] (p : Finperm α → Prop)
@@ -291,7 +291,7 @@ theorem swap_induction_right [DecidableEq α] (p : Finperm α → Prop)
     case insert a s has _ =>
       rw [← remove_mul_eq ⟨π, insert a s, hs⟩ a]
       apply swap
-      · apply not_mem_remove_support
+      · apply notMem_remove_support
       · rw [mk_inv_apply, ne_eq, eq_symm_apply]
         exact (hs a).mp (s.mem_insert_self a)
       exact ih _
@@ -425,7 +425,7 @@ theorem swaps_eq_of_mem₂ [DecidableEq α] {s t : Finset α} {hst : Disjoint s 
   intro ha'
   cases hst a ha' a ha rfl
 
-theorem swaps_eq_of_not_mem [DecidableEq α] {s t : Finset α} {hst : Disjoint s t} {π : s ≃ t}
+theorem swaps_eq_of_notMem [DecidableEq α] {s t : Finset α} {hst : Disjoint s t} {π : s ≃ t}
     (a : α) (has : a ∉ s) (hat : a ∉ t) :
     swaps hst π a = a := by
   simp only [swaps, mk_apply, coe_fn_mk, swapsFun, has, ↓reduceDIte, hat]
@@ -463,12 +463,12 @@ theorem extendMap_mem_iff₂ [DecidableEq α] {s t : Finset α} (π : s ≃ t) (
     extendMap π a ∈ s ∧ extendMap π a ∉ t ↔ a ∈ t ∧ a ∉ s := by
   unfold extendMap
   split_ifs with h₁ h₂
-  · simp only [Finset.mem_sdiff, Finset.coe_mem, not_true_eq_false, and_false, h₁]
+  · simp only [Finset.coe_mem, not_true_eq_false, and_false, h₁]
   · have := (diffEquiv (Finset.card_eq_of_equiv π.symm)
       ⟨a, Finset.mem_sdiff.mpr ⟨h₂, h₁⟩⟩).prop
     rw [Finset.mem_sdiff] at this
     simp only [this, not_false_eq_true, and_self, h₂, h₁]
-  · simp only [h₂, h₁, Finset.mem_sdiff]
+  · simp only [h₂, h₁]
 
 theorem extendMap_mem_iff₃ [DecidableEq α] {s t : Finset α} (π : s ≃ t) (a : α) :
     extendMap π a ∉ s ∧ extendMap π a ∉ t ↔ a ∉ s ∧ a ∉ t := by
@@ -479,7 +479,7 @@ theorem extendMap_mem_iff₃ [DecidableEq α] {s t : Finset α} (π : s ≃ t) (
       ⟨a, Finset.mem_sdiff.mpr ⟨h₂, h₁⟩⟩).prop
     rw [Finset.mem_sdiff] at this
     simp only [this, not_true_eq_false, not_false_eq_true, and_true, h₁, h₂, and_false]
-  · simp only [h₂, h₁, Finset.mem_sdiff]
+  · simp only [h₂, h₁]
 
 theorem extendMap_bijective [DecidableEq α] {s t : Finset α} (π : s ≃ t) :
     Function.Bijective (extendMap π) := by
@@ -520,14 +520,14 @@ theorem extendMap_bijective [DecidableEq α] {s t : Finset α} (π : s ≃ t) :
 noncomputable def extendPerm [DecidableEq α] {s t : Finset α} (π : s ≃ t) : Perm α :=
   Equiv.ofBijective (extendMap π) (extendMap_bijective π)
 
-theorem extendPerm_not_mem [DecidableEq α] {s t : Finset α} (π : s ≃ t)
+theorem extendPerm_notMem [DecidableEq α] {s t : Finset α} (π : s ≃ t)
     (a : α) (ha : extendPerm π a ≠ a) : a ∈ s ∪ t := by
   contrapose! ha
   simp only [Finset.mem_union, not_or] at ha
   simp only [extendPerm, ofBijective_apply, extendMap, ha, ↓reduceDIte]
 
 noncomputable def extendFinperm [DecidableEq α] {s t : Finset α} (π : s ≃ t) : Finperm α :=
-  ofSubset (extendPerm π) (s ∪ t) (extendPerm_not_mem π)
+  ofSubset (extendPerm π) (s ∪ t) (extendPerm_notMem π)
 
 /-- The homogeneity lemma: there is a `Finperm α` extending any given equivalence
 of finite sets `s ≃ t`, acting as the identity outside `s ∪ t`. -/
@@ -588,15 +588,15 @@ there is a finite permutation that maps `s` outside `t`, and is the identity on 
 theorem exists_fresh [DecidableEq α] [Infinite α] (s t : Finset α) :
     ∃ π : Finperm α, (∀ a ∈ s, π a ∉ t) ∧ (∀ a ∈ t \ s, π a = a) := by
   induction s using Finset.cons_induction_on
-  case h₁ =>
+  case empty =>
     use 1
-    simp only [Finset.not_mem_empty, coe_one, id_eq, IsEmpty.forall_iff, implies_true,
+    simp only [Finset.notMem_empty, coe_one, id_eq, IsEmpty.forall_iff, implies_true,
       Finset.sdiff_empty, and_self]
-  case h₂ a s h ih =>
+  case cons a s h ih =>
     obtain ⟨π, hπ₁, hπ₂⟩ := ih
-    simp only [Finset.mem_sdiff, Finset.mem_union, Finset.mem_singleton, and_imp] at hπ₂
-    obtain ⟨b, hb⟩ := Infinite.exists_not_mem_finset (s ∪ t ∪ π.support)
-    simp only [Finset.union_assoc, Finset.mem_union, Finset.mem_singleton, mem_support_iff, ne_eq,
+    simp only [Finset.mem_sdiff, and_imp] at hπ₂
+    obtain ⟨b, hb⟩ := Infinite.exists_notMem_finset (s ∪ t ∪ π.support)
+    simp only [Finset.union_assoc, Finset.mem_union, mem_support_iff, ne_eq,
       not_or, Decidable.not_not] at hb
     refine ⟨π * swap a b, ?_, ?_⟩
     · intro c hc₁ hc₂

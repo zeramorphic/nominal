@@ -47,7 +47,7 @@ instance Nominal.forget_preservesEmpty.{u, v} (𝔸 : Type u) [DecidableEq 𝔸]
 
 instance Nominal.forget_preservesFiniteProducts.{u, v} (𝔸 : Type u) [DecidableEq 𝔸] [Infinite 𝔸] :
     PreservesFiniteProducts.{v} (forget (Bundled.{v} (Nominal 𝔸))) :=
-  ⟨λ _ ↦ preservesShape_fin_of_preserves_binary_and_terminal _ _⟩
+  PreservesFiniteProducts.of_preserves_binary_and_terminal _
 
 def Nominal.forget_equaliserCone_isLimit.{v} [Infinite 𝔸]
     (K : WalkingParallelPair ⥤ Bundled.{v} (Nominal 𝔸)) :
@@ -97,7 +97,7 @@ instance {α : Type*} [HasPerm 𝔸 α] (s : EQ 𝔸 (Set α)) :
     HasPerm 𝔸 s where
   perm π x := ⟨π ⬝ x, by
     have := congr_arg (x.val ∈ ·) (s.equivariant π⁻¹)
-    simp only [Set.mem_setOf_eq, Subtype.coe_prop, eq_iff_iff, iff_true] at this
+    simp only [Subtype.coe_prop, eq_iff_iff, iff_true] at this
     exact this⟩
 
 @[simp]

@@ -91,7 +91,7 @@ def MulPerm.nominalCoreflection_coproductCocone_isColimit
   uniq := by
     intro s m h
     ext x
-    simp only [mapCocone_pt, Nominal.forget_hom, id_eq, comp_obj, const_obj_obj]
+    simp only [mapCocone_pt, Nominal.forget_hom, comp_obj, const_obj_obj]
     rw [← h x.val.fst]
     rfl
 

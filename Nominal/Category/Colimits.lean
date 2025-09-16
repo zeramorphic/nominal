@@ -54,7 +54,7 @@ def Nominal.coequaliserCocone [Infinite 𝔸] (K : WalkingParallelPair ⥤ Bundl
       case right => rfl
       case id =>
         simp only [forget_hom, const_obj_obj, walkingParallelPairHom_id,
-          CategoryTheory.Functor.map_id, id_eq, Category.id_comp, const_obj_map, Category.comp_id]
+          CategoryTheory.Functor.map_id, Category.id_comp, const_obj_map, Category.comp_id]
   }
 
 def Nominal.coequaliserCocone_isColimit [Infinite 𝔸]

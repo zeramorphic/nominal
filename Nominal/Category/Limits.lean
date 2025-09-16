@@ -104,11 +104,11 @@ def Nominal.equaliserCone.{v} [Infinite 𝔸] (K : WalkingParallelPair ⥤ Bundl
       cases h
       case left => rfl
       case right =>
-        simp only [forget_hom, id_eq, const_obj_obj, const_obj_map, Category.id_comp,
+        simp only [forget_hom, const_obj_obj, const_obj_map, Category.id_comp,
           Function.comp_apply]
         exact Subtype.prop x
       case id =>
-        simp only [forget_hom, id_eq, const_obj_obj, walkingParallelPairHom_id,
+        simp only [forget_hom, const_obj_obj, walkingParallelPairHom_id,
           CategoryTheory.Functor.map_id, Category.id_comp, const_obj_map, Category.comp_id]
   }
 

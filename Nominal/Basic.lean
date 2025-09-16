@@ -149,7 +149,7 @@ theorem Finperm.inter_supports [Infinite 𝔸] {α : Sort*} [MulPerm 𝔸 α]
   rw [supports_iff'] at hs ht
   rw [supports_iff]
   intro a b ha hb hab
-  obtain ⟨c, hc⟩ := Infinite.exists_not_mem_finset (s ∪ t ∪ {a, b})
+  obtain ⟨c, hc⟩ := Infinite.exists_notMem_finset (s ∪ t ∪ {a, b})
   simp at hc
   rw [swap_triple a b c hab (by tauto), mul_perm, mul_perm]
   rw [Finset.mem_inter, not_and] at ha hb
@@ -161,7 +161,7 @@ theorem Finperm.inter_supports [Infinite 𝔸] {α : Sort*} [MulPerm 𝔸 α]
     by_cases hb' : b ∈ s
     · exact ht b c (hb hb') (by tauto)
     · exact hs b c hb' (by tauto)
-  cc
+  aesop
 
 /-!
 # Finite and empty support
@@ -274,7 +274,7 @@ theorem name_supp_eq [Infinite 𝔸] (a : 𝔸) :
     cases h
     intro s hs
     by_contra ha
-    obtain ⟨b, hb⟩ := Infinite.exists_not_mem_finset (s ∪ {a})
+    obtain ⟨b, hb⟩ := Infinite.exists_notMem_finset (s ∪ {a})
     rw [Finset.mem_union, Finset.mem_singleton, not_or] at hb
     have := hs (swap a b) ?_
     · rw [perm_name_eq, swap_apply_left] at this
@@ -396,7 +396,7 @@ theorem supp_perm_eq {α : Sort*} [MulPerm 𝔸 α] (x : α) (π : Finperm 𝔸)
       have := h (π⁻¹ ⬝ s) hs.of_perm
       rwa [Finset.mem_perm, inv_inv, perm_inv_perm] at this
   · rw [supp_eq_of_not_finitelySupported x hx, supp_eq_of_not_finitelySupported]
-    simp only [Finset.not_mem_empty]
+    simp only [Finset.notMem_empty]
     intro h
     exact hx h.of_perm
 
@@ -414,7 +414,7 @@ theorem subset_of_strongSupports [Infinite 𝔸] {s t : Finset 𝔸} {α : Sort*
     s ⊆ t := by
   intro a ha
   by_contra ha'
-  obtain ⟨b, hb⟩ := Infinite.exists_not_mem_finset (t ∪ {a})
+  obtain ⟨b, hb⟩ := Infinite.exists_notMem_finset (t ∪ {a})
   rw [StrongSupports] at hs
   have := ht (swap a b) ?_
   · have := (hs (swap a b)).mpr this a ha
@@ -643,7 +643,7 @@ theorem Function.supports_iff {α β : Sort*} [MulPerm 𝔸 α] [MulPerm 𝔸 β
     Supports s f ↔
       ∀ π : Finperm 𝔸, (∀ a ∈ s, π a = a) →
       ∀ x, π ⬝ f x = f (π ⬝ x) := by
-  simp only [FinitelySupported, Supports, funext_iff, perm_def]
+  simp only [Supports, funext_iff, perm_def]
   constructor
   · intro hs π hπ x
     rw [← hs π⁻¹, perm_inv_perm, inv_inv]

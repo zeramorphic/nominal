@@ -1,5 +1,5 @@
 import Mathlib.Data.Rel
-import Mathlib.Order.Chain
+import Mathlib.Order.Preorder.Chain
 
 open Set
 open scoped symmDiff
@@ -7,6 +7,33 @@ open scoped symmDiff
 namespace Rel
 
 variable {α β γ : Type _}
+
+def dom (r : Rel α β) : Set α :=
+  {a | ∃ b, r a b}
+
+def codom (r : Rel α β) : Set β :=
+  {b| ∃ a, r a b}
+
+def inv (r : Rel α β) : Rel β α :=
+  fun b a => r a b
+
+def image (r : Rel α β) (s : Set α) : Set β :=
+  {b | ∃ a ∈ s, r a b}
+
+def preimage (r : Rel α β) (s : Set β) : Set α :=
+  {a | ∃ b ∈ s, r a b}
+
+def comp (r : Rel α β) (s : Rel β γ) : Rel α γ :=
+  fun a c => ∃ b, r a b ∧ s b c
+
+theorem preimage_inv (r : Rel α β) (s : Set α) :
+    r.inv.preimage s = r.image s :=
+  rfl
+
+theorem image_union (r : Rel α β) (s t : Set α) :
+    r.image (s ∪ t) = r.image s ∪ r.image t := by
+  unfold image
+  aesop
 
 def field (r : Rel α α) : Set α :=
   r.dom ∪ r.codom
@@ -28,23 +55,23 @@ structure Cosurjective (r : Rel α β) : Prop where
   cosurjective : ∀ x, ∃ y, r x y
 
 @[mk_iff]
-structure Functional (r : Rel α β) extends r.Coinjective, r.Cosurjective : Prop
+structure Functional (r : Rel α β) : Prop extends Coinjective r, Cosurjective r
 
 @[mk_iff]
-structure Cofunctional (r : Rel α β) extends r.Injective, r.Surjective : Prop
+structure Cofunctional (r : Rel α β) : Prop extends Injective r, Surjective r
 
 @[mk_iff]
-structure OneOne (r : Rel α β) extends r.Injective, r.Coinjective : Prop
+structure OneOne (r : Rel α β) : Prop extends Injective r, Coinjective r
 
 @[mk_iff]
-structure Bijective (r : Rel α β) extends r.Functional, r.Cofunctional : Prop
+structure Bijective (r : Rel α β) : Prop extends Functional r, Cofunctional r
 
 @[mk_iff]
 structure CodomEqDom (r : Rel α α) : Prop where
   codom_eq_dom : r.codom = r.dom
 
 @[mk_iff]
-structure Permutative (r : Rel α α) extends r.OneOne, r.CodomEqDom : Prop
+structure Permutative (r : Rel α α) : Prop extends OneOne r, CodomEqDom r
 
 theorem CodomEqDom.dom_union_codom {r : Rel α α} (h : r.CodomEqDom) :
     r.dom ∪ r.codom = r.dom := by
@@ -151,7 +178,7 @@ theorem inv_preimage {r : Rel α β} {s : Set α} :
 theorem comp_inv {r : Rel α β} {s : Rel β γ} :
     (r.comp s).inv = s.inv.comp r.inv := by
   ext c a
-  simp only [inv, flip, comp]
+  simp only [inv, comp]
   tauto
 
 theorem Injective.image_injective {r : Rel α β} (h : r.Injective) {s t : Set α}
@@ -257,8 +284,9 @@ theorem graph'_injective :
 
 @[simp]
 theorem image_dom {r : Rel α β} :
-    r.image r.dom = r.codom :=
-  preimage_eq_codom_of_domain_subset r subset_rfl
+    r.image r.dom = r.codom := by
+  rw [image, dom, codom]
+  aesop
 
 @[simp]
 theorem preimage_codom {r : Rel α β} :
@@ -276,7 +304,7 @@ theorem image_subset_codom (r : Rel α β) (s : Set α) :
 
 theorem image_empty_of_disjoint_dom {r : Rel α β} {s : Set α} (h : Disjoint r.dom s) :
     r.image s = ∅ := by
-  rw [eq_empty_iff_forall_not_mem]
+  rw [eq_empty_iff_forall_notMem]
   rw [disjoint_iff_forall_ne] at h
   rintro y ⟨x, hx₁, hx₂⟩
   exact h ⟨y, hx₂⟩ hx₁ rfl
@@ -428,10 +456,10 @@ theorem iSup_dom {T : Type _} (r : T → Rel α β) :
   simp only [dom, iSup_apply_iff, Set.ext_iff, mem_setOf_eq, mem_iUnion]
   exact λ x ↦ exists_comm
 
-theorem biSup_dom {T : Type _} (r : T → Rel α β) (s : Set T) :
-    (⨆ t ∈ s, r t).dom = ⋃ t ∈ s, (r t).dom := by
-  have := iSup_dom (λ t : s ↦ r t)
-  rwa [iSup_subtype'', iUnion_coe_set] at this
+-- theorem biSup_dom {T : Type _} (r : T → Rel α β) (s : Set T) :
+--     (⨆ t ∈ s, r t).dom = ⋃ t ∈ s, (r t).dom := by
+--   have := iSup_dom (λ t : s ↦ r t)
+--   rwa [iSup_subtype'', iUnion_coe_set] at this
 
 theorem isChain_inv {T : Type _} {r : T → Rel α β} (h : IsChain (· ≤ ·) (Set.range r)) :
     IsChain (· ≤ ·) (Set.range (λ t ↦ (r t).inv)) := by
@@ -444,7 +472,7 @@ theorem iSup_inv {T : Type _} {r : T → Rel α β} :
     (⨆ t, (r t).inv) = (⨆ t, r t).inv := by
   apply le_antisymm <;>
   · rintro x y h
-    simp only [inv, iSup_apply_iff, flip] at h ⊢
+    simp only [inv, iSup_apply_iff] at h ⊢
     exact h
 
 theorem iSup_injective_of_isChain {T : Type _} {r : T → Rel α β}

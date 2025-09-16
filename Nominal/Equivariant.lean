@@ -21,7 +21,7 @@ theorem supp_equivariant [Infinite 𝔸] {α : Type*} [MulPerm 𝔸 α] :
       have := h (π ⬝ s) (hs.perm π)
       rwa [Finset.mem_perm] at this
   · rw [supp_eq_of_not_finitelySupported x hx, supp_eq_of_not_finitelySupported]
-    · simp only [Finperm.perm_name_eq, Finset.not_mem_empty]
+    · simp only [Finperm.perm_name_eq, Finset.notMem_empty]
     · contrapose! hx
       exact hx.of_perm
 
@@ -162,7 +162,7 @@ theorem FinitelySupported.finite_or_finite [Infinite 𝔸]
       rw [swap_apply_of_ne_of_ne] <;>
       · rintro rfl
         contradiction
-  obtain ⟨b, hb⟩ := Infinite.exists_not_mem_finset s
+  obtain ⟨b, hb⟩ := Infinite.exists_notMem_finset s
   by_cases hb' : p b
   · right
     apply s.finite_toSet.subset

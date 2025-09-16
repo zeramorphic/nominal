@@ -247,8 +247,8 @@ theorem subset_of_supports [Nominal 𝔸 α] [Nominal 𝔸 β] {x : α} {y : β}
   intro a ha
   rw [Finset.mem_sdiff] at ha
   by_contra ha'
-  obtain ⟨b, hb₁, hb₂, hb₃,hb₄⟩ := ((newNames_not_mem (supp 𝔸 y)).and
-    ((newNames_not_mem (supp 𝔸 x)).and ((newNames_not_mem s).and (newNames_not_mem {a})))).exists
+  obtain ⟨b, hb₁, hb₂, hb₃,hb₄⟩ := ((newNames_notMem (supp 𝔸 y)).and
+    ((newNames_notMem (supp 𝔸 x)).and ((newNames_notMem s).and (newNames_notMem {a})))).exists
   rw [Finset.mem_singleton] at hb₄
   have := hs (swap a b) ?_
   · rw [perm_mk, mk_eq_iff] at this

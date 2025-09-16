@@ -89,7 +89,7 @@ theorem Equivariant.empty_supports {α : Type*} [MulPerm 𝔸 α] (x : α) (h : 
 theorem Equivariant.supp_eq_empty {α : Type*} [MulPerm 𝔸 α] {x : α}
     (h : Equivariant 𝔸 x) :
     supp 𝔸 x = ∅ := by
-  rw [Finset.eq_empty_iff_forall_not_mem]
+  rw [Finset.eq_empty_iff_forall_notMem]
   intro a ha
   rw [mem_supp_iff' _ ⟨∅, h.empty_supports⟩] at ha
   have := ha ∅ (λ π _ ↦ h π)
@@ -172,7 +172,7 @@ instance {α : Type*} [MulPerm 𝔸 α] : MulPerm 𝔸 (Part α) where
   mul_perm := by
     intro π₁ π₂ x
     ext y
-    simp only [Part.mem_perm_iff, inv_one, mul_inv_rev, mul_perm]
+    simp only [Part.mem_perm_iff, mul_inv_rev, mul_perm]
 
 theorem Part.supports_iff_of_dom {α : Type*} [MulPerm 𝔸 α]
     {x : Part α} (hx : x.Dom) (s : Finset 𝔸) :
@@ -203,7 +203,7 @@ theorem Part.supports_of_not_dom {α : Type*} [MulPerm 𝔸 α]
   intro π hπ
   ext y
   rw [Part.eq_none_iff'.mpr hx]
-  simp only [mem_perm_iff, Part.not_mem_none]
+  simp only [mem_perm_iff, Part.notMem_none]
 
 instance {α : Type*} [Nominal 𝔸 α] : Nominal 𝔸 (Part α) where
   supported := by
@@ -223,10 +223,10 @@ theorem Part.supp_eq_of_dom {α : Type*} [Nominal 𝔸 α] {x : Part α} (hx : x
 theorem Part.supp_eq_of_not_dom {α : Type*} [Nominal 𝔸 α] {x : Part α} (hx : ¬x.Dom) :
     supp 𝔸 x = ∅ := by
   ext a
-  simp only [Nominal.mem_supp_iff, supports_of_not_dom hx, forall_const, Finset.not_mem_empty,
+  simp only [Nominal.mem_supp_iff, supports_of_not_dom hx, forall_const, Finset.notMem_empty,
     iff_false, not_forall]
   use ∅
-  exact Finset.not_mem_empty a
+  exact Finset.notMem_empty a
 
 theorem Part.fresh_iff_of_dom {α β : Type*} [Nominal 𝔸 α] [MulPerm 𝔸 β]
     {x : Part α} (hx : x.Dom) (y : β) :
@@ -504,7 +504,7 @@ theorem Equivariant.uncurry₂ {α β γ : Type*} {δ : Sort*} [MulPerm 𝔸 α]
     [MulPerm 𝔸 γ] [MulPerm 𝔸 δ] {f : α → β → γ → δ} (h : Equivariant 𝔸 f) :
     Equivariant 𝔸 (λ x (y : β × γ) ↦ f x y.1 y.2) := by
   simp only [Function.equivariant_iff, funext_iff, Function.perm_def, Prod.forall,
-    Function.uncurry_apply_pair, Prod.perm_mk] at h ⊢
+    Prod.perm_mk] at h ⊢
   intro π x y z
   rw [← h π x y z]
 
@@ -865,7 +865,7 @@ theorem Finperm.support_subset_of_supports [Infinite 𝔸] {π : Finperm 𝔸} {
     π.support ⊆ s := by
   intro a ha
   by_contra ha'
-  obtain ⟨b, hb⟩ := Infinite.exists_not_mem_finset (π.support ∪ s)
+  obtain ⟨b, hb⟩ := Infinite.exists_notMem_finset (π.support ∪ s)
   rw [Finset.mem_union, not_or] at hb
   have := hs (swap a b) ?_
   · suffices a = b by cases this; tauto
@@ -901,7 +901,7 @@ protected theorem Finperm.supp_eq [Infinite 𝔸] (π : Finperm 𝔸) :
 theorem Finperm.fresh_iff [Infinite 𝔸] (π : Finperm 𝔸) {α : Type*} [MulPerm 𝔸 α] (x : α) :
     π #[𝔸] x ↔ ∀ a ∈ supp 𝔸 x, π a = a := by
   simp only [fresh_def, Finperm.supp_eq, Finset.disjoint_iff_inter_eq_empty,
-    Finset.eq_empty_iff_forall_not_mem, Finset.mem_inter, mem_support_iff, ne_eq, not_and,
+    Finset.eq_empty_iff_forall_notMem, Finset.mem_inter, mem_support_iff, ne_eq, not_and,
     not_imp_not]
 
 theorem perm_eq_of_fresh [Infinite 𝔸] {π : Finperm 𝔸} {α : Type*} [Nominal 𝔸 α] {x : α}

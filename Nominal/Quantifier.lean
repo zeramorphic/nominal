@@ -192,7 +192,7 @@ theorem newNames_perm [DecidableEq 𝔸] {p : 𝔸 → Prop} (π : Finperm 𝔸)
     (ν a, p a) ↔ (ν a, p (π a)) :=
   ⟨λ h ↦ h.perm π, λ h ↦ h.of_perm⟩
 
-theorem newNames_not_mem [DecidableEq 𝔸] (s : Finset 𝔸) :
+theorem newNames_notMem [DecidableEq 𝔸] (s : Finset 𝔸) :
     ν a, a ∉ s := by
   simp only [newNames_def', Set.compl_setOf, Decidable.not_not, Finset.setOf_mem,
     Finset.finite_toSet]
@@ -207,7 +207,7 @@ theorem FinitelySupported.new [DecidableEq 𝔸] {α β : Type*}
     ν (a : 𝔸), ν (b : 𝔸), ∀ x, swap a b ⬝ f x = f (swap a b ⬝ x) := by
   rw [Function.finitelySupported_iff] at hf
   obtain ⟨s, hs⟩ := hf
-  have := newNames_not_mem s
+  have := newNames_notMem s
   apply this.mono
   intro a ha
   apply this.mono
@@ -225,9 +225,9 @@ theorem finitelySupported_iff [DecidableEq 𝔸] [Infinite 𝔸] {α : Sort*} [M
   constructor
   · rintro ⟨s, hs⟩
     rw [supports_iff'] at hs
-    apply (newNames_not_mem s).mono
+    apply (newNames_notMem s).mono
     intro a ha
-    apply (newNames_not_mem s).mono
+    apply (newNames_notMem s).mono
     intro b hb
     exact hs a b ha hb
   · intro h
@@ -236,7 +236,7 @@ theorem finitelySupported_iff [DecidableEq 𝔸] [Infinite 𝔸] {α : Sort*} [M
     use h.toFinset
     intro a b ha hb hab
     simp only [Set.Finite.mem_toFinset, Set.mem_compl_iff, Set.mem_setOf_eq, not_not] at ha hb
-    obtain ⟨c, hac, hbc, hcb⟩ := (ha.and (hb.and (newNames_not_mem {b}))).exists
+    obtain ⟨c, hac, hbc, hcb⟩ := (ha.and (hb.and (newNames_notMem {b}))).exists
     simp only [Finset.mem_singleton] at hcb
     rw [swap_triple a b c hab (Ne.symm hcb), mul_perm, mul_perm, hac, hbc, hac]
 
@@ -335,7 +335,7 @@ theorem fresh_of_coinjective {r : α → β → Prop} (h₁ : Rel.Coinjective r)
     eq_iff_iff] at this
   rw [fresh_iff_exists_swap_perm_eq]
   obtain ⟨b, hbx, hby, hbr⟩ := ((newNames_fresh (𝔸 := 𝔸) x).and
-    ((newNames_fresh y).and (newNames_not_mem (supp 𝔸 r)))).exists
+    ((newNames_fresh y).and (newNames_notMem (supp 𝔸 r)))).exists
   refine ⟨b, hby, ?_⟩
   have := this (swap a b) ?_ x y
   · rw [swap_perm_eq_of_fresh a b x hx hbx, swap_inv] at this
@@ -388,7 +388,7 @@ notation3 "fresh "(...)", "r:(scoped p => freshName p) => r
 /-- **The freshness theorem** for functions. -/
 theorem fresh_spec [Nonempty α] (f : 𝔸 → α) (hf₁ : ν a, a #[𝔸] f a) (hf₂ : FinitelySupported 𝔸 f) :
     ν a, (fresh b, f b) = f a := by
-  have := exists_of_newNames_fresh f.graph ?_ hf₂.graph ?_
+  have := exists_of_newNames_fresh _ ?_ hf₂.graph ?_
   · obtain ⟨x, hx, -⟩ := this
     rw [freshName]
     have := Classical.epsilon_spec (p := λ x ↦ ν a, f a = x) ⟨x, hx⟩
@@ -399,4 +399,4 @@ theorem fresh_spec [Nonempty α] (f : 𝔸 → α) (hf₁ : ν a, a #[𝔸] f a)
     rintro x y a rfl rfl
     rfl
   · apply hf₁.mono
-    simp only [Function.graph_def, exists_eq_right', imp_self, implies_true]
+    simp only [exists_eq_right', imp_self, implies_true]
